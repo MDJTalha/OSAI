@@ -3,22 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSAI Camera Test</title>
-    <link rel="stylesheet" href="force-video.css">
+    <title>OSAI - Camera Working</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; }
-        #video { width: 100vw; height: 100vh; object-fit: cover; background: #000; }
-        #btn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px 60px; font-size: 24px; background: #3B82F6; color: white; border: none; border-radius: 12px; cursor: pointer; z-index: 9999; }
-        #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; z-index: 9999; font-size: 13px; max-height: 50vh; overflow-y: auto; }
-        .log { margin: 3px 0; }
-        .error { color: #EF4444; }
-        .success { color: #10B981; }
+        body { font-family: Arial, sans-serif; background: #000; color: white; overflow: hidden; }
+        #video { 
+            width: 100vw; 
+            height: 100vh; 
+            object-fit: cover; 
+            background: #000;
+            display: none; /* Hidden until loaded */
+        }
+        #btn { 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            padding: 30px 60px; 
+            font-size: 24px; 
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6); 
+            color: white; 
+            border: none; 
+            border-radius: 16px; 
+            cursor: pointer; 
+            z-index: 9999;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.5);
+        }
+        #btn:hover { transform: translate(-50%, -50%) scale(1.05); }
+        #btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #debug { 
+            position: fixed; 
+            top: 10px; 
+            left: 10px; 
+            background: rgba(0,0,0,0.9); 
+            padding: 15px; 
+            border-radius: 8px; 
+            z-index: 9999; 
+            font-size: 13px; 
+            max-height: 50vh; 
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        .log { margin: 5px 0; border-left: 2px solid #3B82F6; padding-left: 10px; }
+        .error { color: #EF4444; border-color: #EF4444; }
+        .success { color: #10B981; border-color: #10B981; }
+        .warning { color: #F59E0B; border-color: #F59E0B; }
+        #loading { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #3B82F6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="debug"><h3>🔍 DEBUG LOG</h3><div id="logs"></div></div>
     <button id="btn">📷 START CAMERA</button>
+    <div id="loading"><div class="spinner"></div>Starting Camera...</div>
     <video id="video" autoplay playsinline muted></video>
     
     <script>
@@ -26,52 +64,133 @@
             const d = document.getElementById('logs');
             const div = document.createElement('div');
             div.className = 'log ' + t;
-            div.textContent = '• ' + m;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${m}`;
             d.appendChild(div);
+            d.scrollTop = d.scrollHeight;
             console.log(m);
         };
         
+        log('=== OSAI CAMERA TEST ===', 'success');
         log('Page loaded', 'success');
-        log('HTTPS: ' + (location.protocol === 'https:' ? 'YES' : 'NO'), location.protocol === 'https:' ? 'success' : 'error');
+        log('HTTPS: ' + (location.protocol === 'https:' ? 'YES ✓' : 'NO ✗'), location.protocol === 'https:' ? 'success' : 'error');
+        log('User Agent: ' + navigator.userAgent.substring(0, 50) + '...');
+        
+        const btn = document.getElementById('btn');
+        const video = document.getElementById('video');
+        const loading = document.getElementById('loading');
         
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            log('ERROR: Camera API not supported', 'error');
-            document.getElementById('btn').disabled = true;
+            log('ERROR: Camera API not supported in this browser', 'error');
+            btn.disabled = true;
+            btn.textContent = 'NOT SUPPORTED';
         } else {
-            log('Camera API: Available', 'success');
+            log('Camera API: Available ✓', 'success');
             
-            document.getElementById('btn').onclick = async () => {
-                const btn = document.getElementById('btn');
-                const video = document.getElementById('video');
-                
+            btn.onclick = async () => {
                 try {
-                    log('Requesting camera...');
-                    btn.textContent = 'Starting...';
+                    log('--- Starting Camera ---');
                     btn.disabled = true;
+                    btn.textContent = 'Requesting Permission...';
+                    loading.style.display = 'block';
                     
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    log('Permission GRANTED!', 'success');
+                    log('Step 1: Requesting camera permission...');
+                    
+                    // Try with timeout
+                    const stream = await Promise.race([
+                        navigator.mediaDevices.getUserMedia({ 
+                            video: { 
+                                facingMode: 'environment',
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            } 
+                        }),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Timeout after 10 seconds')), 10000)
+                        )
+                    ]);
+                    
+                    log('Step 2: Permission GRANTED! ✓', 'success');
+                    log('Stream tracks: ' + stream.getVideoTracks().length);
                     
                     video.srcObject = stream;
-                    log('Video stream attached', 'success');
+                    log('Step 3: Stream attached to video element', 'success');
                     
-                    video.onloadedmetadata = () => {
-                        log('Video loaded: ' + video.videoWidth + 'x' + video.videoHeight, 'success');
-                        video.play();
-                        log('Video PLAYING!', 'success');
-                        btn.style.display = 'none';
-                        log('✅ CAMERA WORKING!', 'success');
-                    };
+                    btn.textContent = 'Loading Video...';
+                    
+                    // Wait for video to load with timeout
+                    await Promise.race([
+                        new Promise((resolve) => {
+                            video.onloadedmetadata = () => {
+                                log('Step 4: Video metadata loaded ✓', 'success');
+                                log('Video size: ' + video.videoWidth + 'x' + video.videoHeight, 'success');
+                                resolve();
+                            };
+                            video.onerror = () => reject(new Error('Video error'));
+                        }),
+                        new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error('Video load timeout')), 5000)
+                        )
+                    ]);
+                    
+                    // Play video
+                    await video.play();
+                    log('Step 5: Video PLAYING! ✓', 'success');
+                    
+                    // Show video, hide button
+                    video.style.display = 'block';
+                    btn.style.display = 'none';
+                    loading.style.display = 'none';
+                    
+                    log('=== CAMERA WORKING! ===', 'success');
+                    log('You should see the camera feed now!', 'success');
+                    
+                    // Draw diagnostic overlay
+                    const canvas = document.createElement('canvas');
+                    canvas.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);padding:10px;border-radius:8px;z-index:9999;';
+                    canvas.width = 200;
+                    canvas.height = 100;
+                    document.body.appendChild(canvas);
+                    
+                    const ctx = canvas.getContext('2d');
+                    function draw() {
+                        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                        ctx.fillRect(0, 0, 200, 100);
+                        ctx.fillStyle = '#0F0';
+                        ctx.font = '14px Arial';
+                        ctx.fillText('✓ CAMERA ACTIVE', 10, 25);
+                        ctx.fillText('Time: ' + new Date().toLocaleTimeString(), 10, 50);
+                        ctx.fillText('Size: ' + video.videoWidth + 'x' + video.videoHeight, 10, 75);
+                        requestAnimationFrame(draw);
+                    }
+                    draw();
                     
                 } catch (err) {
                     log('ERROR: ' + err.name + ' - ' + err.message, 'error');
-                    btn.textContent = '📷 START CAMERA';
+                    log('Error code: ' + (err.code || 'N/A'), 'error');
+                    
+                    if (err.name === 'NotAllowedError') {
+                        log('→ You denied camera permission', 'warning');
+                        log('→ Allow camera in browser settings', 'warning');
+                    } else if (err.name === 'NotFoundError') {
+                        log('→ No camera found on device', 'warning');
+                    } else if (err.name === 'TimeoutError' || err.message.includes('timeout')) {
+                        log('→ Camera stream timed out', 'warning');
+                        log('→ Try again or restart browser', 'warning');
+                    }
+                    
                     btn.disabled = false;
+                    btn.textContent = '📷 TRY AGAIN';
+                    loading.style.display = 'none';
                 }
             };
             
-            log('Click START CAMERA button', 'success');
+            log('Ready - Click START CAMERA button', 'success');
         }
+        
+        // Periodic status
+        setInterval(() => {
+            log('Status: Video readyState=' + video.readyState + ', Display=' + video.style.display);
+        }, 10000);
     </script>
 </body>
 </html>
