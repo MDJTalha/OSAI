@@ -1,321 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OSAI - AI Vision System</title>
-    
-    <!-- PINNED DEPENDENCY VERSIONS - No conflicts -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
-    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="cvReady=true"></script>
-    
-    <style>
-        /* CRITICAL: Video always visible */
-        video, #video, #cameraFeed {
-            display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            object-fit: cover;
-            z-index: 1;
-            background: #000;
-        }
-        
-        /* Base styles */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #0A192F; color: #F9FAFB; overflow: hidden; }
-        
-        /* Stats bar */
-        .stats { position: fixed; top: 0; left: 0; right: 0; background: rgba(10,25,47,0.95); padding: 12px 20px; display: flex; gap: 20px; z-index: 1000; backdrop-filter: blur(10px); }
-        .stat { font-size: 14px; }
-        .stat strong { color: #3B82F6; }
-        
-        /* Camera button */
-        #startBtn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; border: none; border-radius: 16px; padding: 40px 80px; font-size: 28px; font-weight: bold; cursor: pointer; z-index: 9999; box-shadow: 0 10px 40px rgba(59,130,246,0.5); }
-        #startBtn:active { transform: translate(-50%, -50%) scale(0.95); }
-        #startBtn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        /* Action buttons */
-        .actions { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,25,47,0.95); padding: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; z-index: 1000; backdrop-filter: blur(10px); }
-        .action-btn { background: #1F2937; color: #F9FAFB; border: 1px solid #374151; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; min-height: 48px; min-width: 48px; }
-        .action-btn:hover { background: #3B82F6; }
-        
-        /* Loading */
-        #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 30px; border-radius: 16px; z-index: 9998; display: none; text-align: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #3B82F6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* Toast */
-        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #3B82F6; color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 14px; }
-        .toast.success { background: #10B981; }
-        .toast.error { background: #EF4444; }
-        
-        /* Debug log */
-        #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.9); color: #0F0; padding: 15px; border-radius: 8px; z-index: 9999; font-size: 12px; max-width: 90vw; max-height: 40vh; overflow-y: auto; font-family: monospace; display: none; }
-        #debug.show { display: block; }
-        #toggleDebug { position: fixed; top: 10px; right: 10px; background: #EF4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; z-index: 10000; cursor: pointer; font-size: 14px; }
-        
-        /* Mobile */
-        @media (max-width: 768px) {
-            .stats { flex-wrap: wrap; gap: 8px; padding: 8px; }
-            .stat { min-width: calc(33% - 8px); font-size: 12px; }
-            .actions { flex-direction: column; padding: 8px; }
-            .action-btn { width: 100%; min-height: 56px; font-size: 16px; }
-            #startBtn { padding: 30px 60px; font-size: 24px; max-width: 90vw; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSAI v3 - DEPLOYMENT TEST</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial;background:#000;color:#fff}
+#v{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#000}
+#b{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#3B82F6;color:#fff;border:none;border-radius:16px;padding:40px 80px;font-size:28px;font-weight:bold;cursor:pointer;z-index:9999}
+#l{position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.95);color:#0F0;padding:15px;border-radius:8px;z-index:9999;font-size:13px;max-height:50vh;overflow-y:auto;font-family:monospace;display:none;border:2px solid #0F0}
+#l.v{display:block}
+#t{position:fixed;top:10px;right:10px;background:#EF4444;color:#fff;border:none;padding:10px 20px;border-radius:8px;z-index:10000;cursor:pointer;font-weight:bold}
+#ver{position:fixed;bottom:10px;left:10px;background:rgba(59,130,246,0.9);padding:10px;border-radius:8px;z-index:9999;font-size:12px}
+</style>
 </head>
 <body>
-    <!-- Stats -->
-    <div class="stats">
-        <div class="stat">Models: <strong id="aiModels">Loading...</strong></div>
-        <div class="stat">Items: <strong id="itemCount">0</strong></div>
-        <div class="stat">FPS: <strong id="fpsValue">0</strong></div>
-    </div>
-    
-    <!-- Debug -->
-    <button id="toggleDebug">📋 LOG</button>
-    <div id="debug"></div>
-    
-    <!-- Loading -->
-    <div id="loading">
-        <div class="spinner"></div>
-        <div id="loadingText">Starting...</div>
-    </div>
-    
-    <!-- Camera Button -->
-    <button id="startBtn">📷 START CAMERA</button>
-    
-    <!-- Video (ALWAYS VISIBLE) -->
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
-    
-    <!-- Action Buttons -->
-    <div class="actions">
-        <button class="action-btn" onclick="detect()">🔍 Detect</button>
-        <button class="action-btn" onclick="capture()">📷 Capture</button>
-        <button class="action-btn" onclick="analyze()">📊 Analyze</button>
-        <button class="action-btn" onclick="scan()">📱 Scan</button>
-        <button class="action-btn" onclick="ocr()">📝 Text</button>
-    </div>
-
-    <script>
-        // === GLOBAL STATE ===
-        let cameraActive = false;
-        let modelsLoaded = 0;
-        let cocoSsdModel = null;
-        let cvReady = false;
-        let detectionInterval = null;
-        let fps = 0;
-        
-        // === ELEMENTS ===
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('startBtn');
-        const loading = document.getElementById('loading');
-        const loadingText = document.getElementById('loadingText');
-        const debug = document.getElementById('debug');
-        const toggleDebug = document.getElementById('toggleDebug');
-        
-        // === LOGGING ===
-        let logs = [];
-        const log = (msg, type='') => {
-            logs.push(`<div style="color:${type==='error'?'#EF4444':type==='success'?'#10B981':'#0F0'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`);
-            debug.innerHTML = logs.join('');
-            console.log('[OSAI]', msg);
-        };
-        
-        toggleDebug.onclick = () => debug.classList.toggle('show');
-        log('=== OSAI INITIALIZED ===', 'success');
-        log('Versions: TF.js 4.10.0, COCO-SSD 2.2.3');
-        
-        // === INITIALIZATION ===
-        async function init() {
-            try {
-                // Load COCO-SSD model
-                log('Loading COCO-SSD model...');
-                loadingText.textContent = 'Loading AI models...';
-                loading.style.display = 'block';
-                
-                cocoSsdModel = await cocoSsd.load();
-                modelsLoaded++;
-                document.getElementById('aiModels').textContent = `${modelsLoaded}/1`;
-                document.getElementById('aiModels').style.color = '#10B981';
-                log('COCO-SSD loaded', 'success');
-                
-                // Check OpenCV
-                if (cvReady) {
-                    log('OpenCV ready', 'success');
-                }
-                
-                loading.style.display = 'none';
-                log('Initialization complete', 'success');
-                showToast('OSAI Ready!', 'success');
-                
-                // Start FPS counter
-                startFPS();
-                
-            } catch (err) {
-                log('Init error: ' + err.message, 'error');
-                loadingText.textContent = 'Error loading models';
-            }
-        }
-        
-        // === CAMERA ===
-        startBtn.onclick = async () => {
-            startBtn.disabled = true;
-            startBtn.textContent = 'STARTING...';
-            log('Requesting camera...');
-            
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-                });
-                
-                log('Permission granted', 'success');
-                video.srcObject = stream;
-                
-                await new Promise((resolve, reject) => {
-                    video.onloadedmetadata = () => {
-                        log(`Video: ${video.videoWidth}x${video.videoHeight}`, 'success');
-                        resolve();
-                    };
-                    video.onerror = reject;
-                    setTimeout(() => reject(new Error('Timeout')), 10000);
-                });
-                
-                await video.play();
-                log('Video PLAYING', 'success');
-                
-                cameraActive = true;
-                startBtn.style.display = 'none';
-                
-                // Setup canvas
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                
-                // Start detection loop
-                startDetectionLoop();
-                
-                showToast('Camera Active!', 'success');
-                
-            } catch (err) {
-                log('Camera error: ' + err.message, 'error');
-                startBtn.disabled = false;
-                startBtn.textContent = '📷 TRY AGAIN';
-                showToast(err.message, 'error');
-            }
-        };
-        
-        // === DETECTION LOOP ===
-        async function startDetectionLoop() {
-            if (!cameraActive || !cocoSsdModel) return;
-            
-            const detect = async () => {
-                try {
-                    const predictions = await cocoSsdModel.detect(video);
-                    
-                    // Clear canvas
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    
-                    // Draw predictions
-                    predictions.forEach(pred => {
-                        const [x, y, w, h] = pred.bbox;
-                        
-                        // Box
-                        ctx.strokeStyle = '#3B82F6';
-                        ctx.lineWidth = 3;
-                        ctx.strokeRect(x, y, w, h);
-                        
-                        // Label
-                        ctx.fillStyle = '#3B82F6';
-                        ctx.font = '16px Arial';
-                        ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, x, y - 5);
-                    });
-                    
-                    // Update stats
-                    document.getElementById('itemCount').textContent = predictions.length;
-                    
-                } catch (err) {
-                    log('Detection error: ' + err.message, 'error');
-                }
-                
-                requestAnimationFrame(detect);
-            };
-            
-            detect();
-            log('Detection loop started', 'success');
-        }
-        
-        // === FPS COUNTER ===
-        function startFPS() {
-            let lastTime = performance.now();
-            let frameCount = 0;
-            
-            const update = () => {
-                const now = performance.now();
-                frameCount++;
-                
-                if (now - lastTime >= 1000) {
-                    fps = frameCount;
-                    document.getElementById('fpsValue').textContent = fps;
-                    frameCount = 0;
-                    lastTime = now;
-                }
-                
-                requestAnimationFrame(update);
-            };
-            
-            update();
-        }
-        
-        // === BUTTON ACTIONS ===
-        function detect() {
-            showToast('Detecting...', 'info');
-            log('Detect clicked');
-        }
-        
-        function capture() {
-            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
-            
-            const link = document.createElement('a');
-            link.download = `osai-${Date.now()}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-            showToast('Captured!', 'success');
-            log('Capture clicked');
-        }
-        
-        function analyze() {
-            showToast('Analyzing...', 'info');
-            log('Analyze clicked');
-        }
-        
-        function scan() {
-            showToast('Scan mode', 'info');
-            log('Scan clicked');
-        }
-        
-        function ocr() {
-            showToast('OCR mode', 'info');
-            log('OCR clicked');
-        }
-        
-        // === TOAST ===
-        function showToast(msg, type='info') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = msg;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-        
-        // === START ===
-        init();
-    </script>
+<button id="t">📋 SHOW LOG</button>
+<div id="l"></div>
+<div id="ver">DEPLOYED: <span id="timestamp"></span></div>
+<button id="b">📷 START CAMERA</button>
+<video id="v" autoplay playsinline muted></video>
+<script>
+document.getElementById('timestamp').textContent=new Date().toISOString();
+const l=document.getElementById('l'),t=document.getElementById('t'),v=document.getElementById('v'),b=document.getElementById('b');
+let logs=[];
+const log=(m,c)=>{logs.push('<div style="color:'+(c||'#0F0')+'">['+new Date().toLocaleTimeString()+'] '+m+'</div>');l.innerHTML=logs.join('');console.log(m);};
+t.onclick=()=>l.classList.toggle('v');
+log('=== OSAI v3 DEPLOYMENT TEST ===','success');
+log('Timestamp: '+new Date().toISOString(),'success');
+log('URL: '+location.href,'warning');
+b.onclick=async()=>{
+  b.disabled=true;b.textContent='WAIT...';
+  try{
+    log('Requesting camera...');
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    log('✓ Stream obtained','success');
+    v.srcObject=s;
+    log('✓ Attached to video');
+    await new Promise((ok,no)=>{
+      v.onloadedmetadata=()=>{log('✓ Loaded '+v.videoWidth+'x'+v.videoHeight,'success');ok();};
+      v.onerror=()=>no(new Error('Video error'));
+      setTimeout(()=>no(new Error('Timeout')),10000);
+    });
+    v.style.display='block';v.style.visibility='visible';v.style.opacity='1';
+    log('✓ Video CSS forced');
+    await v.play();
+    log('✓ VIDEO PLAYING!','success');
+    b.style.display='none';
+    log('=== SUCCESS - CAMERA WORKING ===','success');
+    setInterval(()=>{log('Status: Playing | Size: '+v.videoWidth+'x'+v.videoHeight);},5000);
+  }catch(e){
+    log('ERROR: '+e.message,'error');
+    b.disabled=false;b.textContent='📷 RETRY';
+  }
+};
+log('Ready - tap START CAMERA');
+</script>
 </body>
 </html>
