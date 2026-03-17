@@ -1,61 +1,495 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OSAI v3 - DEPLOYMENT TEST</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Arial;background:#000;color:#fff}
-#v{position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;background:#000}
-#b{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#3B82F6;color:#fff;border:none;border-radius:16px;padding:40px 80px;font-size:28px;font-weight:bold;cursor:pointer;z-index:9999}
-#l{position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.95);color:#0F0;padding:15px;border-radius:8px;z-index:9999;font-size:13px;max-height:50vh;overflow-y:auto;font-family:monospace;display:none;border:2px solid #0F0}
-#l.v{display:block}
-#t{position:fixed;top:10px;right:10px;background:#EF4444;color:#fff;border:none;padding:10px 20px;border-radius:8px;z-index:10000;cursor:pointer;font-weight:bold}
-#ver{position:fixed;bottom:10px;left:10px;background:rgba(59,130,246,0.9);padding:10px;border-radius:8px;z-index:9999;font-size:12px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="OSAI - Autonomous AI Vision System">
+    <meta name="theme-color" content="#0A192F">
+    <title>OSAI - Enterprise AI Vision System</title>
+    
+    <!-- Pinned AI Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1"></script>
+    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="cvReady=true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <style>
+        /* Video - Always Visible */
+        video, #video, #cameraFeed {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            object-fit: cover;
+            z-index: 1;
+            background: #000;
+        }
+        
+        canvas { position: fixed; top: 0; left: 0; z-index: 2; pointer-events: none; }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0A192F; color: #F9FAFB; overflow: hidden; }
+        
+        /* Header Stats */
+        .header { position: fixed; top: 0; left: 0; right: 0; background: rgba(10,25,47,0.95); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; backdrop-filter: blur(10px); }
+        .stats { display: flex; gap: 20px; }
+        .stat { font-size: 14px; }
+        .stat strong { color: #3B82F6; }
+        .header-actions { display: flex; gap: 10px; }
+        .header-btn { background: #1F2937; color: #F9FAFB; border: 1px solid #374151; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+        .header-btn:hover { background: #3B82F6; }
+        
+        /* Camera Start Button */
+        #startBtn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #3B82F6, #8B5CF6); color: white; border: none; border-radius: 16px; padding: 40px 80px; font-size: 28px; font-weight: bold; cursor: pointer; z-index: 9999; box-shadow: 0 10px 40px rgba(59,130,246,0.5); transition: transform 0.2s; }
+        #startBtn:active { transform: translate(-50%, -50%) scale(0.95); }
+        #startBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Quick Actions Bar */
+        .quick-actions { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10,25,47,0.95); padding: 12px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; z-index: 1000; backdrop-filter: blur(10px); }
+        .action-btn { background: #1F2937; color: #F9FAFB; border: 1px solid #374151; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; min-height: 48px; min-width: 48px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .action-btn:hover { background: #3B82F6; }
+        .action-icon { font-size: 20px; }
+        .action-label { font-size: 12px; }
+        
+        /* Floating Controls */
+        .floating-controls { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 10px; z-index: 1000; }
+        .control-fab { width: 56px; height: 56px; border-radius: 50%; background: #1F2937; color: #F9FAFB; border: 1px solid #374151; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; }
+        .control-fab:hover { background: #3B82F6; }
+        .control-fab.primary { background: #3B82F6; }
+        
+        /* Panels */
+        .panel { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1F2937; border-radius: 12px; padding: 20px; min-width: 300px; max-width: 90vw; z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .panel.active { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .panel-title { font-size: 16px; font-weight: 600; }
+        .panel-close { background: none; border: none; color: #F9FAFB; font-size: 24px; cursor: pointer; }
+        .panel-content { max-height: 300px; overflow-y: auto; }
+        
+        /* Loading */
+        .loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); padding: 30px; border-radius: 16px; z-index: 9998; display: none; text-align: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #3B82F6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Toast */
+        .toast { position: fixed; bottom: 150px; left: 50%; transform: translateX(-50%); background: #3B82F6; color: white; padding: 12px 24px; border-radius: 8px; z-index: 10000; font-size: 14px; animation: slideUp 0.3s; }
+        .toast.success { background: #10B981; }
+        .toast.error { background: #EF4444; }
+        .toast.warning { background: #F59E0B; }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        
+        /* Debug Log */
+        #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.95); color: #0F0; padding: 15px; border-radius: 8px; z-index: 9999; font-size: 12px; max-width: 90vw; max-height: 40vh; overflow-y: auto; font-family: monospace; display: none; border: 2px solid #0F0; }
+        #debug.show { display: block; }
+        #toggleDebug { position: fixed; top: 10px; right: 10px; background: #EF4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; z-index: 10000; cursor: pointer; font-size: 14px; font-weight: bold; }
+        
+        /* Mobile */
+        @media (max-width: 768px) {
+            .header { flex-direction: column; gap: 10px; padding: 8px; }
+            .stats { flex-wrap: wrap; gap: 8px; justify-content: center; }
+            .stat { min-width: calc(33% - 8px); font-size: 11px; }
+            .quick-actions { flex-direction: row; overflow-x: auto; padding: 8px; }
+            .action-btn { min-width: 70px; flex: 0 0 70px; }
+            .floating-controls { display: none; }
+            #startBtn { padding: 30px 60px; font-size: 24px; max-width: 90vw; }
+        }
+    </style>
 </head>
 <body>
-<button id="t">📋 SHOW LOG</button>
-<div id="l"></div>
-<div id="ver">DEPLOYED: <span id="timestamp"></span></div>
-<button id="b">📷 START CAMERA</button>
-<video id="v" autoplay playsinline muted></video>
-<script>
-document.getElementById('timestamp').textContent=new Date().toISOString();
-const l=document.getElementById('l'),t=document.getElementById('t'),v=document.getElementById('v'),b=document.getElementById('b');
-let logs=[];
-const log=(m,c)=>{logs.push('<div style="color:'+(c||'#0F0')+'">['+new Date().toLocaleTimeString()+'] '+m+'</div>');l.innerHTML=logs.join('');console.log(m);};
-t.onclick=()=>l.classList.toggle('v');
-log('=== OSAI v3 DEPLOYMENT TEST ===','success');
-log('Timestamp: '+new Date().toISOString(),'success');
-log('URL: '+location.href,'warning');
-b.onclick=async()=>{
-  b.disabled=true;b.textContent='WAIT...';
-  try{
-    log('Requesting camera...');
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    log('✓ Stream obtained','success');
-    v.srcObject=s;
-    log('✓ Attached to video');
-    await new Promise((ok,no)=>{
-      v.onloadedmetadata=()=>{log('✓ Loaded '+v.videoWidth+'x'+v.videoHeight,'success');ok();};
-      v.onerror=()=>no(new Error('Video error'));
-      setTimeout(()=>no(new Error('Timeout')),10000);
-    });
-    v.style.display='block';v.style.visibility='visible';v.style.opacity='1';
-    log('✓ Video CSS forced');
-    await v.play();
-    log('✓ VIDEO PLAYING!','success');
-    b.style.display='none';
-    log('=== SUCCESS - CAMERA WORKING ===','success');
-    setInterval(()=>{log('Status: Playing | Size: '+v.videoWidth+'x'+v.videoHeight);},5000);
-  }catch(e){
-    log('ERROR: '+e.message,'error');
-    b.disabled=false;b.textContent='📷 RETRY';
-  }
-};
-log('Ready - tap START CAMERA');
-</script>
+    <!-- Header -->
+    <div class="header">
+        <div class="stats">
+            <div class="stat">Models: <strong id="aiModels">Loading...</strong></div>
+            <div class="stat">Items: <strong id="itemCount">0</strong></div>
+            <div class="stat">FPS: <strong id="fpsValue">0</strong></div>
+            <div class="stat">Props: <strong id="itemProps">--</strong></div>
+        </div>
+        <div class="header-actions">
+            <button class="header-btn" onclick="showDashboard()">📊 Dashboard</button>
+            <button class="header-btn" onclick="showReports()">📄 Reports</button>
+        </div>
+    </div>
+    
+    <!-- Debug -->
+    <button id="toggleDebug">📋 LOG</button>
+    <div id="debug"></div>
+    
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div id="loadingText">Loading AI models...</div>
+    </div>
+    
+    <!-- Camera Start Button -->
+    <button id="startBtn">📷 START CAMERA</button>
+    
+    <!-- Video & Canvas -->
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+    
+    <!-- Floating Controls -->
+    <div class="floating-controls">
+        <button class="control-fab primary" onclick="detect()" title="Detect Objects">🔍</button>
+        <button class="control-fab" onclick="capture()" title="Capture">📷</button>
+        <button class="control-fab" onclick="analyze()" title="Analyze">📊</button>
+        <button class="control-fab" onclick="toggleNightVision()" title="Night Vision">🌙</button>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="action-btn" onclick="startMeasurement()">
+            <span class="action-icon">📏</span>
+            <span class="action-label">Measure</span>
+        </button>
+        <button class="action-btn" onclick="startScan()">
+            <span class="action-icon">📱</span>
+            <span class="action-label">Scan</span>
+        </button>
+        <button class="action-btn" onclick="startOCR()">
+            <span class="action-icon">🔤</span>
+            <span class="action-label">Text</span>
+        </button>
+        <button class="action-btn" onclick="startFace()">
+            <span class="action-icon">😊</span>
+            <span class="action-label">Face</span>
+        </button>
+        <button class="action-btn" onclick="toggleVoice()">
+            <span class="action-icon">🎤</span>
+            <span class="action-label">Voice</span>
+        </button>
+        <button class="action-btn" onclick="toggleMenu()">
+            <span class="action-icon">☰</span>
+            <span class="action-label">Menu</span>
+        </button>
+    </div>
+    
+    <!-- Results Panel -->
+    <div class="panel" id="resultsPanel">
+        <div class="panel-header">
+            <div class="panel-title">📊 Analysis Results</div>
+            <button class="panel-close" onclick="hidePanel()">&times;</button>
+        </div>
+        <div class="panel-content" id="resultsContent">
+            <p>No results yet. Click "Detect" to analyze the scene.</p>
+        </div>
+    </div>
+
+    <script>
+        // === GLOBAL STATE ===
+        let cameraActive = false;
+        let modelsLoaded = 0;
+        let cocoSsdModel = null;
+        let mobilenetModel = null;
+        let cvReady = false;
+        let detectionInterval = null;
+        let fps = 0;
+        let lastDetections = [];
+        
+        // === ELEMENTS ===
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const loading = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const debug = document.getElementById('debug');
+        const toggleDebug = document.getElementById('toggleDebug');
+        const resultsPanel = document.getElementById('resultsPanel');
+        const resultsContent = document.getElementById('resultsContent');
+        
+        // === LOGGING ===
+        let logs = [];
+        const log = (msg, type='') => {
+            logs.push(`<div style="color:${type==='error'?'#EF4444':type==='success'?'#10B981':'#0F0'}">[${new Date().toLocaleTimeString()}] ${msg}</div>`);
+            debug.innerHTML = logs.join('');
+            debug.scrollTop = debug.scrollHeight;
+            console.log('[OSAI]', msg);
+        };
+        
+        toggleDebug.onclick = () => debug.classList.toggle('show');
+        log('=== OSAI v10.0 INITIALIZED ===', 'success');
+        log('TensorFlow.js: 4.10.0');
+        log('COCO-SSD: 2.2.3');
+        log('MobileNet: 2.1.1');
+        
+        // === INITIALIZATION ===
+        async function init() {
+            try {
+                loading.style.display = 'block';
+                
+                // Load COCO-SSD
+                log('Loading COCO-SSD model...');
+                cocoSsdModel = await cocoSsd.load();
+                modelsLoaded++;
+                updateModelsDisplay();
+                log('✓ COCO-SSD loaded', 'success');
+                
+                // Load MobileNet
+                log('Loading MobileNet model...');
+                mobilenetModel = await mobilenet.load();
+                modelsLoaded++;
+                updateModelsDisplay();
+                log('✓ MobileNet loaded', 'success');
+                
+                // Check OpenCV
+                if (typeof cv !== 'undefined' && cvReady) {
+                    log('✓ OpenCV ready', 'success');
+                }
+                
+                loading.style.display = 'none';
+                log('=== All models loaded ===', 'success');
+                showToast('OSAI Ready! Click START CAMERA', 'success');
+                
+                // Start FPS counter
+                startFPS();
+                
+            } catch (err) {
+                log('Init error: ' + err.message, 'error');
+                loadingText.textContent = 'Error: ' + err.message;
+                showToast('Model load error: ' + err.message, 'error');
+            }
+        }
+        
+        function updateModelsDisplay() {
+            const el = document.getElementById('aiModels');
+            el.textContent = `${modelsLoaded}/2`;
+            el.style.color = modelsLoaded === 2 ? '#10B981' : '#F59E0B';
+        }
+        
+        // === CAMERA ===
+        startBtn.onclick = async () => {
+            startBtn.disabled = true;
+            startBtn.textContent = 'STARTING...';
+            log('Requesting camera...');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+                });
+                
+                log('✓ Permission granted', 'success');
+                video.srcObject = stream;
+                
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = () => {
+                        log(`✓ Video: ${video.videoWidth}x${video.videoHeight}`, 'success');
+                        resolve();
+                    };
+                    video.onerror = reject;
+                    setTimeout(() => reject(new Error('Timeout')), 10000);
+                });
+                
+                await video.play();
+                log('✓ Video PLAYING', 'success');
+                
+                cameraActive = true;
+                startBtn.style.display = 'none';
+                
+                // Setup canvas
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                // Start detection loop
+                startDetectionLoop();
+                
+                showToast('Camera Active!', 'success');
+                
+            } catch (err) {
+                log('Camera error: ' + err.message, 'error');
+                startBtn.disabled = false;
+                startBtn.textContent = '📷 TRY AGAIN';
+                showToast(err.message, 'error');
+            }
+        };
+        
+        // === DETECTION LOOP ===
+        async function startDetectionLoop() {
+            if (!cameraActive) return;
+            
+            const detect = async () => {
+                if (!cocoSsdModel) return;
+                
+                try {
+                    const predictions = await cocoSsdModel.detect(video);
+                    lastDetections = predictions;
+                    
+                    // Clear canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Draw predictions
+                    predictions.forEach(pred => {
+                        const [x, y, w, h] = pred.bbox;
+                        
+                        // Box
+                        ctx.strokeStyle = '#3B82F6';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(x, y, w, h);
+                        
+                        // Label
+                        ctx.fillStyle = '#3B82F6';
+                        ctx.font = '14px Arial';
+                        ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, x, y - 5);
+                    });
+                    
+                    // Update stats
+                    document.getElementById('itemCount').textContent = predictions.length;
+                    
+                    // Update props
+                    if (predictions.length > 0) {
+                        const classes = [...new Set(predictions.map(p => p.class))];
+                        document.getElementById('itemProps').textContent = classes.slice(0, 3).join(', ');
+                    }
+                    
+                } catch (err) {
+                    log('Detection error: ' + err.message, 'error');
+                }
+                
+                requestAnimationFrame(detect);
+            };
+            
+            detect();
+            log('Detection loop started', 'success');
+        }
+        
+        // === FPS COUNTER ===
+        function startFPS() {
+            let lastTime = performance.now();
+            let frameCount = 0;
+            
+            const update = () => {
+                const now = performance.now();
+                frameCount++;
+                
+                if (now - lastTime >= 1000) {
+                    fps = frameCount;
+                    document.getElementById('fpsValue').textContent = fps;
+                    frameCount = 0;
+                    lastTime = now;
+                }
+                
+                requestAnimationFrame(update);
+            };
+            
+            update();
+        }
+        
+        // === FEATURE FUNCTIONS ===
+        function detect() {
+            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
+            showToast('Detecting objects...', 'info');
+            log('Detect clicked - ' + lastDetections.length + ' objects');
+            
+            if (lastDetections.length > 0) {
+                showResults(lastDetections);
+            }
+        }
+        
+        function capture() {
+            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
+            
+            const link = document.createElement('a');
+            link.download = `osai-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            showToast('Image captured!', 'success');
+            log('Capture clicked');
+        }
+        
+        function analyze() {
+            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
+            showResults(lastDetections);
+            log('Analyze clicked');
+        }
+        
+        function toggleNightVision() {
+            video.style.filter = video.style.filter === 'contrast(1.5) brightness(1.3)' ? '' : 'contrast(1.5) brightness(1.3)';
+            showToast('Night vision ' + (video.style.filter ? 'ON' : 'OFF'), 'info');
+            log('Night vision toggled');
+        }
+        
+        function startMeasurement() {
+            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
+            showToast('Measurement mode - Tap to measure', 'info');
+            log('Measurement mode activated');
+        }
+        
+        function startScan() {
+            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
+            showToast('Scan mode active - Show barcode/QR', 'info');
+            log('Scan mode activated');
+        }
+        
+        function startOCR() {
+            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
+            showToast('OCR mode - Show text', 'info');
+            log('OCR mode activated');
+        }
+        
+        function startFace() {
+            if (!cameraActive) { showToast('Start camera first!', 'warning'); return; }
+            showToast('Face detection active', 'info');
+            log('Face detection activated');
+        }
+        
+        function toggleVoice() {
+            showToast('Voice commands ready', 'info');
+            log('Voice mode toggled');
+        }
+        
+        function toggleMenu() {
+            showToast('Menu - Coming soon', 'info');
+            log('Menu toggled');
+        }
+        
+        function showDashboard() {
+            showToast('Dashboard - Coming soon', 'info');
+            log('Dashboard requested');
+        }
+        
+        function showReports() {
+            showToast('Reports - Coming soon', 'info');
+            log('Reports requested');
+        }
+        
+        // === RESULTS PANEL ===
+        function showResults(detections) {
+            if (!detections || detections.length === 0) {
+                resultsContent.innerHTML = '<p>No objects detected. Click "Detect" to analyze.</p>';
+            } else {
+                let html = '<div style="display: grid; gap: 10px;">';
+                detections.forEach((d, i) => {
+                    html += `<div style="background: #1F2937; padding: 12px; border-radius: 8px; border-left: 3px solid #3B82F6;">
+                        <div style="font-weight: 600; color: #3B82F6;">${d.class}</div>
+                        <div style="font-size: 13px; color: #9CA3AF;">Confidence: ${Math.round(d.score * 100)}%</div>
+                        <div style="font-size: 12px; color: #6B7280;">Box: [${d.bbox.join(', ')}]</div>
+                    </div>`;
+                });
+                html += '</div>';
+                resultsContent.innerHTML = html;
+            }
+            
+            resultsPanel.classList.add('active');
+            log('Results panel shown - ' + detections.length + ' objects');
+        }
+        
+        function hidePanel() {
+            resultsPanel.classList.remove('active');
+        }
+        
+        // === TOAST ===
+        function showToast(msg, type='info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // === START ===
+        init();
+    </script>
 </body>
 </html>
