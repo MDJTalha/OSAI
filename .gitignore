@@ -108,3 +108,5 @@ desktop.ini
 *.crt
 secrets/
 config/secrets.json
+
+.vercel
