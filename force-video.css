@@ -1,0 +1,29 @@
+/* CRITICAL: Force video to display */
+#video, video, #cameraFeed, .camera-feed {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    object-fit: cover !important;
+    z-index: 1 !important;
+    background: #000 !important;
+}
+
+/* Hide button when video starts */
+#btn {
+    z-index: 9999 !important;
+}
+
+/* Hide debug after 10 seconds */
+#debug {
+    z-index: 9999 !important;
+}
+
+/* Remove any overlay covering video */
+.overlay, .modal, .panel, [style*="display: none"] {
+    z-index: 9998 !important;
+}
