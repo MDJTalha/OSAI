@@ -3,259 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OSAI Camera - FIXED</title>
+    <title>OSAI - RAW CAMERA TEST</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { 
-            width: 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            background: #000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-        }
-        #video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            background: #000;
-            z-index: 1;
-        }
-        #btn {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            padding: 40px 80px;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 9999;
-            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.5);
-            transition: transform 0.2s;
-        }
-        #btn:active { transform: translate(-50%, -50%) scale(0.95); }
-        #debug {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.85);
-            color: #0F0;
-            padding: 12px;
-            border-radius: 8px;
-            z-index: 9999;
-            font-size: 12px;
-            max-width: 90vw;
-            max-height: 40vh;
-            overflow-y: auto;
-            font-family: monospace;
-            border: 1px solid #333;
-        }
-        #status {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            padding: 15px 25px;
-            border-radius: 12px;
-            z-index: 9999;
-            font-size: 16px;
-            text-align: center;
-        }
-        .success { color: #10B981; }
-        .error { color: #EF4444; }
-        .warning { color: #F59E0B; }
-        #overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(59, 130, 246, 0.3);
-            z-index: 9998;
-            display: none;
-            pointer-events: none;
-        }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: Arial, sans-serif; }
+        #video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; background: #000; z-index: 1; }
+        #btn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #3B82F6; color: white; border: none; border-radius: 16px; padding: 40px 80px; font-size: 28px; font-weight: bold; cursor: pointer; z-index: 9999; }
+        #debug { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); color: #0F0; padding: 20px; z-index: 9999; font-size: 14px; overflow-y: auto; font-family: monospace; display: none; }
+        #debug.show { display: block; }
+        #toggle { position: fixed; top: 10px; right: 10px; background: #EF4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; z-index: 10000; cursor: pointer; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div id="debug">🔍 DEBUG LOG<br>────────────</div>
+    <button id="toggle">📋 SHOW LOG</button>
+    <div id="debug"></div>
     <button id="btn">📷 START CAMERA</button>
-    <div id="status">Ready to start camera</div>
     <video id="video" autoplay playsinline muted></video>
-    <div id="overlay"></div>
     
     <script>
-        const logEl = document.getElementById('debug');
-        const statusEl = document.getElementById('status');
+        // NO ERROR HANDLING - RAW JAVASCRIPT
+        const debug = document.getElementById('debug');
+        const toggle = document.getElementById('toggle');
         const video = document.getElementById('video');
         const btn = document.getElementById('btn');
-        const overlay = document.getElementById('overlay');
         
-        let logCount = 0;
+        let logs = [];
         const log = (msg, type='') => {
-            logCount++;
             const time = new Date().toLocaleTimeString();
-            const div = document.createElement('div');
-            div.innerHTML = `<span style="color:#666">[${time}]</span> ${msg}`;
-            if (type) div.classList.add(type);
-            logEl.appendChild(div);
-            logEl.scrollTop = logEl.scrollHeight;
-            console.log('[OSAI]', msg);
+            logs.push(`<div class="${type}">[${time}] ${msg}</div>`);
+            debug.innerHTML = logs.join('');
+            debug.scrollTop = debug.scrollHeight;
+            console.log(msg);
         };
         
-        const status = (msg, type='') => {
-            statusEl.innerHTML = msg;
-            statusEl.className = type;
-        };
+        toggle.onclick = () => debug.classList.toggle('show');
         
-        log('=== OSAI CAMERA TEST ===', 'success');
-        log('Page loaded successfully');
-        log('HTTPS: ' + (location.protocol === 'https:' ? 'YES ✓' : 'NO ✗'), location.protocol === 'https:' ? 'success' : 'error');
-        log('Screen: ' + window.innerWidth + 'x' + window.innerHeight);
+        log('=== RAW CAMERA TEST ===');
+        log('Script loaded');
+        log('HTTPS: ' + location.protocol);
+        log('User Agent: ' + navigator.userAgent);
         
-        // Check camera support
-        if (!navigator.mediaDevices) {
-            log('ERROR: mediaDevices not available', 'error');
-            status('Camera not supported in this browser', 'error');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            log('ERROR: Camera API missing', 'error');
             btn.disabled = true;
-        } else if (!navigator.mediaDevices.getUserMedia) {
-            log('ERROR: getUserMedia not available', 'error');
-            status('Camera API not available', 'error');
-            btn.disabled = true;
+            btn.textContent = 'NOT SUPPORTED';
         } else {
-            log('Camera API: Available ✓', 'success');
+            log('Camera API available');
             
             btn.onclick = async () => {
+                log('Button clicked');
+                btn.disabled = true;
+                btn.textContent = 'REQUESTING...';
+                
                 try {
-                    log('─────────────────────');
-                    log('Starting camera...');
-                    status('Requesting permission...', 'warning');
-                    btn.disabled = true;
-                    btn.textContent = 'REQUESTING...';
+                    log('Requesting camera...');
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    log('Stream obtained', 'success');
                     
-                    // Request camera with timeout
-                    const stream = await Promise.race([
-                        navigator.mediaDevices.getUserMedia({ 
-                            video: { 
-                                facingMode: 'environment',
-                                width: { ideal: 1920 },
-                                height: { ideal: 1080 }
-                            } 
-                        }),
-                        new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error('Timeout after 15 seconds')), 15000)
-                        )
-                    ]);
-                    
-                    log('Permission GRANTED ✓', 'success');
-                    status('Permission granted!', 'success');
-                    
-                    const track = stream.getVideoTracks()[0];
-                    log('Video track: ' + track.label);
-                    log('Settings: ' + JSON.stringify(track.getSettings()));
-                    
-                    // Attach stream to video
                     video.srcObject = stream;
-                    log('Stream attached to video element');
+                    log('Stream attached');
                     
-                    status('Loading video...', 'warning');
-                    btn.textContent = 'LOADING...';
-                    
-                    // Wait for video to load
-                    await new Promise((resolve, reject) => {
-                        const timeout = setTimeout(() => reject(new Error('Video load timeout')), 10000);
+                    video.onloadedmetadata = () => {
+                        log('Metadata loaded', 'success');
+                        log('Size: ' + video.videoWidth + 'x' + video.videoHeight);
                         
-                        video.onloadedmetadata = () => {
-                            clearTimeout(timeout);
-                            log('Video metadata loaded ✓', 'success');
-                            log('Resolution: ' + video.videoWidth + 'x' + video.videoHeight);
-                            resolve();
-                        };
-                        
-                        video.onerror = () => {
-                            clearTimeout(timeout);
-                            reject(new Error('Video error'));
-                        };
-                    });
-                    
-                    // Play video
-                    await video.play();
-                    log('Video PLAYING ✓', 'success');
-                    
-                    // Force video display with multiple methods
-                    video.style.display = 'block';
-                    video.style.visibility = 'visible';
-                    video.style.opacity = '1';
-                    video.style.zIndex = '1';
-                    document.body.style.background = '#000';
-                    
-                    log('Video display forced', 'success');
-                    log('=== CAMERA ACTIVE ===', 'success');
-                    status('✓ CAMERA WORKING! Tap screen to test', 'success');
-                    
-                    // Hide button, show overlay
-                    btn.style.display = 'none';
-                    overlay.style.display = 'block';
-                    
-                    // Hide overlay after 3 seconds
-                    setTimeout(() => {
-                        overlay.style.display = 'none';
-                    }, 3000);
-                    
-                    // Tap to test
-                    video.parentElement.onclick = () => {
-                        status('Camera active - ' + new Date().toLocaleTimeString(), 'success');
-                        log('Tap test: Video is responsive');
+                        video.play().then(() => {
+                            log('Video playing', 'success');
+                            btn.style.display = 'none';
+                            log('=== SUCCESS ===', 'success');
+                        }).catch(err => log('Play error: ' + err.message, 'error'));
                     };
                     
-                    // Status updates
-                    setInterval(() => {
-                        if (video.readyState >= 3) {
-                            status('📹 LIVE - ' + video.videoWidth + 'x' + video.videoHeight, 'success');
-                        }
-                    }, 2000);
+                    video.onerror = () => log('Video element error', 'error');
                     
                 } catch (err) {
                     log('ERROR: ' + err.name + ' - ' + err.message, 'error');
-                    status('Error: ' + err.message, 'error');
-                    
-                    if (err.name === 'NotAllowedError') {
-                        log('→ You denied camera permission', 'warning');
-                        status('Allow camera in browser settings', 'warning');
-                    } else if (err.name === 'NotFoundError') {
-                        log('→ No camera found', 'warning');
-                        status('No camera on this device', 'warning');
-                    } else if (err.message.includes('timeout')) {
-                        log('→ Stream timed out', 'warning');
-                        status('Camera timeout - try again', 'warning');
-                    }
-                    
                     btn.disabled = false;
-                    btn.textContent = '📷 TRY AGAIN';
+                    btn.textContent = 'TRY AGAIN';
                 }
             };
             
-            log('Ready - Tap START CAMERA button');
-            status('Ready', 'success');
+            log('Ready - tap START CAMERA');
         }
-        
-        // Periodic checks
-        setInterval(() => {
-            if (video.srcObject) {
-                const stream = video.srcObject;
-                const track = stream.getVideoTracks()[0];
-                if (track) {
-                    log('Status: ' + (track.enabled ? 'Active' : 'Disabled') + 
-                        ' | Ready: ' + video.readyState + 
-                        ' | Size: ' + video.videoWidth + 'x' + video.videoHeight);
-                }
-            }
-        }, 5000);
     </script>
 </body>
 </html>
