@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSAI - System Verification</title>
+    <style>
+        :root {
+            --bg-primary: #0A192F;
+            --bg-secondary: #112240;
+            --bg-card: #1F2937;
+            --text-primary: #F9FAFB;
+            --text-secondary: #D1D5DB;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --error: #EF4444;
+            --info: #3B82F6;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .status-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .status-card h2 {
+            font-size: 1.25rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .checklist {
+            list-style: none;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color, #374151);
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .check-icon.success {
+            background: var(--success);
+        }
+
+        .check-icon.error {
+            background: var(--error);
+        }
+
+        .check-icon.pending {
+            background: var(--warning);
+        }
+
+        .check-label {
+            flex: 1;
+        }
+
+        .check-detail {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .overall-status {
+            text-align: center;
+            padding: 40px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 40px;
+        }
+
+        .overall-status h2 {
+            font-size: 2rem;
+            margin-bottom: 16px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 24px;
+            border-radius: 24px;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+
+        .status-badge.success {
+            background: var(--success);
+        }
+
+        .status-badge.warning {
+            background: var(--warning);
+        }
+
+        .status-badge.error {
+            background: var(--error);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--info);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563EB;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-secondary);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        pre {
+            background: var(--bg-secondary);
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 OSAI System Verification</h1>
+            <p class="subtitle">Checking all modules and dependencies</p>
+        </header>
+
+        <div class="overall-status" id="overallStatus">
+            <h2>Running Checks...</h2>
+            <div class="spinner"></div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <h2>📦 Core Modules</h2>
+                <ul class="checklist" id="coreModules"></ul>
+            </div>
+
+            <div class="status-card">
+                <h2>🤖 AI Modules</h2>
+                <ul class="checklist" id="aiModules"></ul>
+            </div>
+
+            <div class="status-card">
+                <h2>🎨 UI Modules</h2>
+                <ul class="checklist" id="uiModules"></ul>
+            </div>
+
+            <div class="status-card">
+                <h2>🔧 System Status</h2>
+                <ul class="checklist" id="systemStatus"></ul>
+            </div>
+
+            <div class="status-card">
+                <h2>🌐 Browser APIs</h2>
+                <ul class="checklist" id="browserAPIs"></ul>
+            </div>
+
+            <div class="status-card">
+                <h2>📊 Performance</h2>
+                <ul class="checklist" id="performance"></ul>
+            </div>
+        </div>
+
+        <div class="overall-status" id="finalStatus" style="display: none;">
+            <h2 id="finalTitle">Verification Complete</h2>
+            <p id="finalMessage"></p>
+            <div class="status-badge" id="finalBadge">--</div>
+            <div class="action-buttons" style="margin-top: 24px;">
+                <button class="btn btn-primary" onclick="location.reload()">Re-run Checks</button>
+                <button class="btn btn-secondary" onclick="location.href='index.html'">Launch OSAI</button>
+                <button class="btn btn-secondary" onclick="downloadReport()">Download Report</button>
+            </div>
+        </div>
+
+        <div class="status-card" id="reportSection" style="display: none;">
+            <h2>📋 Detailed Report</h2>
+            <pre id="reportContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        const checks = {
+            coreModules: [
+                { id: 'errorBoundary', name: 'Error Boundary', key: 'errorBoundary' },
+                { id: 'securityManager', name: 'Security Manager', key: 'securityManager' },
+                { id: 'stateManager', name: 'State Manager', key: 'stateManager' },
+                { id: 'memoryManager', name: 'Memory Manager', key: 'memoryManager' },
+                { id: 'lazyLoader', name: 'Lazy Loader', key: 'lazyLoader' },
+                { id: 'workerManager', name: 'Worker Manager', key: 'workerManager' },
+                { id: 'mainApp', name: 'Main App', key: 'osaiApp' }
+            ],
+            aiModules: [
+                { id: 'cocoSsd', name: 'COCO-SSD', key: 'cocoSsd' },
+                { id: 'mobilenet', name: 'MobileNet', key: 'mobilenet' },
+                { id: 'opencv', name: 'OpenCV.js', key: 'cv' },
+                { id: 'tesseract', name: 'Tesseract.js', key: 'Tesseract' },
+                { id: 'jsQR', name: 'jsQR', key: 'jsQR' }
+            ],
+            uiModules: [
+                { id: 'onboarding', name: 'Onboarding', key: 'onboarding' },
+                { id: 'helpSystem', name: 'Help System', key: 'helpSystem' },
+                { id: 'analytics', name: 'Analytics', key: 'analyticsModule' },
+                { id: 'dashboard', name: 'Dashboard', key: 'dashboardModule' }
+            ],
+            systemStatus: [
+                { id: 'camera', name: 'Camera API', test: () => !!navigator.mediaDevices?.getUserMedia },
+                { id: 'storage', name: 'LocalStorage', test: () => !!localStorage },
+                { id: 'sessionStorage', name: 'SessionStorage', test: () => !!sessionStorage },
+                { id: 'serviceWorker', name: 'Service Worker', test: () => 'serviceWorker' in navigator },
+                { id: 'pwa', name: 'PWA Support', test: () => 'serviceWorker' in navigator && 'PushManager' in window }
+            ],
+            browserAPIs: [
+                { id: 'fetch', name: 'Fetch API', test: () => !!window.fetch },
+                { id: 'promise', name: 'Promises', test: () => !!Promise },
+                { id: 'webworkers', name: 'Web Workers', test: () => !!Worker },
+                { id: 'canvas', name: 'Canvas API', test: () => !!document.createElement('canvas').getContext },
+                { id: 'webgl', name: 'WebGL', test: () => {
+                    const canvas = document.createElement('canvas');
+                    return !!canvas.getContext('webgl') || !!canvas.getContext('experimental-webgl');
+                }}
+            ],
+            performance: [
+                { id: 'memory', name: 'Memory Usage', test: () => performance.memory ? `${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)}MB` : 'N/A' },
+                { id: 'hardwareConcurrency', name: 'CPU Cores', test: () => navigator.hardwareConcurrency || 'N/A' },
+                { id: 'deviceMemory', name: 'Device Memory', test: () => navigator.deviceMemory ? `${navigator.deviceMemory}GB` : 'N/A' },
+                { id: 'connection', name: 'Network', test: () => navigator.connection ? navigator.connection.effectiveType.toUpperCase() : 'N/A' }
+            ]
+        };
+
+        let results = {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            checks: {}
+        };
+
+        async function runChecks() {
+            let total = 0;
+            let passed = 0;
+
+            // Check Core Modules
+            for (const check of checks.coreModules) {
+                const result = window[check.key] ? 'pass' : 'fail';
+                addCheckResult('coreModules', check.id, check.name, result);
+                results.checks[check.id] = result;
+                total++;
+                if (result === 'pass') passed++;
+                updateProgress(passed, total);
+            }
+
+            // Check AI Modules
+            for (const check of checks.aiModules) {
+                const result = window[check.key] ? 'pass' : 'fail';
+                addCheckResult('aiModules', check.id, check.name, result);
+                results.checks[check.id] = result;
+                total++;
+                if (result === 'pass') passed++;
+                updateProgress(passed, total);
+            }
+
+            // Check UI Modules
+            for (const check of checks.uiModules) {
+                const result = window[check.key] ? 'pass' : 'fail';
+                addCheckResult('uiModules', check.id, check.name, result);
+                results.checks[check.id] = result;
+                total++;
+                if (result === 'pass') passed++;
+                updateProgress(passed, total);
+            }
+
+            // Check System Status
+            for (const check of checks.systemStatus) {
+                const result = check.test() ? 'pass' : 'fail';
+                const detail = typeof check.test() === 'string' ? check.test() : '';
+                addCheckResult('systemStatus', check.id, check.name, result, detail);
+                results.checks[check.id] = result;
+                total++;
+                if (result === 'pass') passed++;
+                updateProgress(passed, total);
+            }
+
+            // Check Browser APIs
+            for (const check of checks.browserAPIs) {
+                const result = check.test() ? 'pass' : 'fail';
+                addCheckResult('browserAPIs', check.id, check.name, result);
+                results.checks[check.id] = result;
+                total++;
+                if (result === 'pass') passed++;
+                updateProgress(passed, total);
+            }
+
+            // Check Performance
+            for (const check of checks.performance) {
+                const result = check.test();
+                const status = result !== 'N/A' ? 'pass' : 'info';
+                addCheckResult('performance', check.id, check.name, status, result.toString());
+                results.checks[check.id] = status;
+                total++;
+                if (status === 'pass') passed++;
+                updateProgress(passed, total);
+            }
+
+            // Show final status
+            showFinalStatus(passed, total);
+        }
+
+        function addCheckResult(section, id, name, status, detail = '') {
+            const list = document.getElementById(section);
+            const li = document.createElement('li');
+            li.className = 'checklist-item';
+            li.innerHTML = `
+                <div class="check-icon ${status}">
+                    ${status === 'pass' ? '✓' : status === 'fail' ? '✗' : '•'}
+                </div>
+                <div class="check-label">
+                    <div>${name}</div>
+                    ${detail ? `<div class="check-detail">${detail}</div>` : ''}
+                </div>
+            `;
+            list.appendChild(li);
+        }
+
+        function updateProgress(passed, total) {
+            const percentage = Math.round((passed / total) * 100);
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+
+        function showFinalStatus(passed, total) {
+            const percentage = Math.round((passed / total) * 100);
+            const overallStatus = document.getElementById('overallStatus');
+            const finalStatus = document.getElementById('finalStatus');
+            const finalTitle = document.getElementById('finalTitle');
+            const finalMessage = document.getElementById('finalMessage');
+            const finalBadge = document.getElementById('finalBadge');
+
+            overallStatus.style.display = 'none';
+            finalStatus.style.display = 'block';
+
+            let status, badgeClass;
+            if (percentage >= 90) {
+                status = 'All checks passed!';
+                badgeClass = 'success';
+            } else if (percentage >= 70) {
+                status = 'Most checks passed';
+                badgeClass = 'warning';
+            } else {
+                status = 'Some checks failed';
+                badgeClass = 'error';
+            }
+
+            finalTitle.textContent = status;
+            finalMessage.textContent = `${passed}/${total} checks passed (${percentage}%)`;
+            finalBadge.textContent = percentage >= 90 ? '✓ Ready' : percentage >= 70 ? '⚠ Warning' : '✗ Issues';
+            finalBadge.className = `status-badge ${badgeClass}`;
+
+            // Show report
+            document.getElementById('reportSection').style.display = 'block';
+            document.getElementById('reportContent').textContent = JSON.stringify(results, null, 2);
+        }
+
+        function downloadReport() {
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `osai-verification-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Run checks when page loads
+        window.addEventListener('load', () => {
+            setTimeout(runChecks, 500);
+        });
+    </script>
+</body>
+</html>

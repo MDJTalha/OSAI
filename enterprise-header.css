@@ -1,0 +1,256 @@
+/* ========================================
+   OSAI - Enterprise Header Styles
+   ======================================== */
+
+/* Enterprise Header - Centered Layout */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-5);
+    background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-blue) 100%);
+    border-bottom: 2px solid var(--highlight-blue);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    height: 90px;
+    position: relative;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: 0 0 auto;
+}
+
+.header-logo {
+    height: 80px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(59, 130, 246, 0.4));
+}
+
+/* Center Status Bar - Perfectly Centered */
+.header-center {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 12px rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: 0.7rem;
+    color: var(--gray-300);
+    white-space: nowrap;
+}
+
+.status-item i {
+    color: var(--highlight-blue);
+    font-size: 0.75rem;
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.6));
+}
+
+.status-item strong {
+    color: white;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+/* Right Side Actions - Auto Size */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 0 0 auto;
+}
+
+.header-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-md);
+    color: var(--gray-200);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.header-btn:hover {
+    background: var(--highlight-blue);
+    border-color: var(--highlight-blue);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.header-btn i {
+    font-size: 0.875rem;
+}
+
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: var(--radius-lg);
+    font-size: 0.75rem;
+    color: var(--success-green);
+    font-weight: 600;
+    white-space: nowrap;
+    width: auto;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--success-green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    flex-shrink: 0;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ========================================
+   Install Prompt - Minimal Design
+   ======================================== */
+
+.install-prompt {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: transparent;
+    padding: var(--space-3);
+    z-index: var(--z-sticky);
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-normal);
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    box-shadow: none;
+}
+
+.install-prompt.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.install-logo {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.install-btn {
+    background: var(--highlight-blue);
+    color: white;
+    border: none;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.install-btn:hover {
+    background: #1E40AF;
+    transform: scale(1.02);
+}
+
+.dismiss-btn {
+    background: transparent;
+    border: none;
+    color: var(--gray-500);
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: var(--space-1);
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.dismiss-btn:hover {
+    color: var(--text-primary);
+}
+@media (max-width: 1024px) {
+    .app-header {
+        grid-template-columns: auto auto;
+    }
+    
+    .header-center {
+        grid-column: 1 / -1;
+        order: 3;
+    }
+    
+    .status-bar {
+        gap: var(--space-3);
+        padding: var(--space-2) var(--space-3);
+    }
+}
+
+@media (max-width: 640px) {
+    .app-header {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+    }
+    
+    .header-left,
+    .header-center,
+    .header-right {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .brand-name {
+        font-size: 1.25rem;
+    }
+    
+    .status-bar {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .header-btn span {
+        display: none;
+    }
+}

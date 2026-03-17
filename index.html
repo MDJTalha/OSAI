@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0A192F">
+    <meta name="description" content="OSAI - Enterprise AI Vision System">
+    <meta name="keywords" content="AI, Computer Vision, Object Detection, Measurement, AR">
+    <meta name="author" content="OSAI Team">
+    <meta name="robots" content="noindex, nofollow">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=(self)">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="OSAI">
+    <meta name="application-name" content="OSAI">
+    <meta name="msapplication-TileColor" content="#0A192F">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <title>OSAI - Enterprise Vision System</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="enterprise-header.css">
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- AI/ML Libraries (loaded with integrity checks in production) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest" defer></script>
+    <script src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady()" type="text/javascript" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
+
+    <!-- Core Infrastructure Modules (load first) -->
+    <script src="error-boundary.js"></script>
+    <script src="security-manager.js"></script>
+    <script src="state-manager.js"></script>
+    <script src="memory-manager.js"></script>
+    <script src="lazy-loader.js"></script>
+    <script src="worker-manager.js"></script>
+    <script src="main.js"></script>
+
+    <!-- Detection Modules -->
+    <script src="comprehensive-detection.js"></script>
+</head>
+<body>
+    <!-- PWA Install Prompt -->
+    <div class="install-prompt" id="installPrompt" role="alert" aria-live="polite">
+        <img src="Logo_OmniSight.png" alt="OSAI Logo" class="install-logo" onerror="this.style.display='none'">
+        <button class="install-btn" id="installBtn" aria-label="Install OSAI application">Install</button>
+        <button class="dismiss-btn" id="dismissInstallBtn" aria-label="Dismiss install prompt">&times;</button>
+    </div>
+
+    <div class="app-container">
+        <!-- Enterprise Header -->
+        <header class="app-header" role="banner">
+            <div class="header-left">
+                <img src="OSAI.png" alt="OSAI Enterprise Vision System Logo" class="header-logo" style="height: 80px; width: auto; max-width: 100%; object-fit: contain;">
+            </div>
+            <div class="header-center">
+                <div class="status-bar" role="status" aria-live="polite" aria-label="System status">
+                    <div class="status-item">
+                        <i class="fas fa-brain" aria-hidden="true"></i>
+                        <span>Models: <strong id="aiModels" aria-label="AI models status">--</strong></span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-database" aria-hidden="true"></i>
+                        <span>Memory: <strong id="learnedCount" aria-label="Learned objects count">0</strong></span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-box" aria-hidden="true"></i>
+                        <span>Items: <strong id="itemCount" aria-label="Detected items count">0</strong></span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-bolt" aria-hidden="true"></i>
+                        <span>FPS: <strong id="fpsValue" aria-label="Frames per second">0</strong></span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-flask" aria-hidden="true"></i>
+                        <span>Props: <strong id="itemProps" aria-label="Item properties">--</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <button class="header-btn" id="reportsBtn" title="View Reports" aria-label="View analysis reports">
+                    <i class="fas fa-file-alt" aria-hidden="true"></i>
+                    <span>Reports</span>
+                </button>
+                <button class="header-btn" id="dashboardBtn" title="Open Dashboard" aria-label="Open analytics dashboard">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
+                    <span>Dashboard</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Camera View - FULL SCREEN -->
+        <main class="camera-container" role="main" aria-label="Camera view and detection controls">
+            <video id="cameraFeed" autoplay playsinline muted aria-label="Live camera feed"></video>
+            <canvas id="cameraCanvas" aria-hidden="true"></canvas>
+            <canvas id="overlayCanvas" aria-label="Detection overlay" role="img"></canvas>
+
+            <!-- Recording Badge -->
+            <div class="recording-badge" id="recordingBadge" role="status" aria-live="polite" aria-atomic="true">
+                <div class="recording-dot" aria-hidden="true"></div>
+                <span>RECORDING</span>
+            </div>
+
+            <!-- Floating Controls -->
+            <div class="controls-floating" role="toolbar" aria-label="Detection controls">
+                <button class="control-fab primary" id="detectBtn" title="Detect Objects" aria-label="Detect objects in camera view">
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                </button>
+                <button class="control-fab" id="captureBtn" title="Capture Image" aria-label="Capture current frame">
+                    <i class="fas fa-camera" aria-hidden="true"></i>
+                </button>
+                <button class="control-fab" id="analyzeBtn" title="Analyze Scene" aria-label="Analyze detected objects">
+                    <i class="fas fa-chart-bar" aria-hidden="true"></i>
+                </button>
+                <button class="control-fab" id="nightVisionBtn" title="Toggle Night Vision" aria-label="Toggle night vision mode">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay" role="alert" aria-live="assertive" aria-busy="false">
+                <div class="spinner" aria-hidden="true"></div>
+                <p class="loading-text" id="loadingText">AI Processing...</p>
+            </div>
+        </main>
+
+        <!-- Quick Actions Bar -->
+        <div class="quick-actions" role="navigation" aria-label="Quick actions">
+            <button class="action-btn" data-action="measure" aria-label="Start measurement mode">
+                <span class="action-icon"><i class="fas fa-ruler" aria-hidden="true"></i></span>
+                <span class="action-label">Measure</span>
+            </button>
+            <button class="action-btn" data-action="scan" aria-label="Start barcode scanner">
+                <span class="action-icon"><i class="fas fa-barcode" aria-hidden="true"></i></span>
+                <span class="action-label">Scan</span>
+            </button>
+            <button class="action-btn" data-action="text" aria-label="Start text recognition (OCR)">
+                <span class="action-icon"><i class="fas fa-font" aria-hidden="true"></i></span>
+                <span class="action-label">Text</span>
+            </button>
+            <button class="action-btn" data-action="face" aria-label="Start face detection">
+                <span class="action-icon"><i class="fas fa-smile"></i></span>
+                <span class="action-label">Face</span>
+            </button>
+            <button class="action-btn" data-action="voice">
+                <span class="action-icon"><i class="fas fa-microphone"></i></span>
+                <span class="action-label">Voice</span>
+            </button>
+            <button class="action-btn" data-action="menu">
+                <span class="action-icon"><i class="fas fa-bars"></i></span>
+                <span class="action-label">Menu</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bottom Panel (Slide Up) -->
+    <div class="bottom-panel" id="bottomPanel">
+        <div class="panel-header">
+            <h3 class="panel-title" id="panelTitle">Analysis Results</h3>
+            <button class="panel-close" id="panelClose">&times;</button>
+        </div>
+        <div class="panel-content">
+            <div class="results-grid" id="resultsGrid">
+                <!-- Dynamic results inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Overlay -->
+    <div class="results-overlay" id="resultsOverlay">
+        <div class="results-card">
+            <div class="results-header">
+                <h3>Detailed Analysis</h3>
+                <button class="panel-close" id="resultsClose">&times;</button>
+            </div>
+            <div class="panel-content" id="detailedResults">
+                <!-- Detailed results here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Calibration Modal -->
+    <div class="modal" id="calibrationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📏 Calibration</h3>
+                <button class="panel-close" id="closeCalibration">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: var(--space-4);">
+                    Place a reference object of known size in view
+                </p>
+                <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-4);">
+                    <input type="number" id="referenceSize" placeholder="Size" 
+                        style="flex: 1; padding: var(--space-2); background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-md);">
+                    <select id="referenceUnit" 
+                        style="padding: var(--space-2); background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-md);">
+                        <option value="cm">cm</option>
+                        <option value="mm">mm</option>
+                        <option value="in">inches</option>
+                    </select>
+                </div>
+                <select id="presetObjects" 
+                    style="width: 100%; padding: var(--space-2); background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: var(--radius-md); margin-bottom: var(--space-4);">
+                    <option value="">Select preset object...</option>
+                    <option value="credit-card">Credit Card (8.57cm)</option>
+                    <option value="a4-paper">A4 Paper (21cm)</option>
+                    <option value="quarter">Quarter (2.43cm)</option>
+                </select>
+                <button class="action-btn primary full-width" id="confirmCalibration" 
+                    style="width: 100%; padding: var(--space-3); background: var(--highlight-blue); border: none; color: white; border-radius: var(--radius-md); font-weight: 600;">
+                    Confirm Calibration
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- All JavaScript Modules -->
+    <!-- Core modules first -->
+    <script src="robust-camera.js"></script>
+    <script src="camera.js"></script>
+    <script src="utils.js"></script>
+    
+    <!-- AI/Detection modules -->
+    <script src="object-detection.js"></script>
+    <script src="enhanced-ai.js"></script>
+    <script src="comprehensive-detection.js"></script>
+    <script src="auto-detection.js"></script>
+    
+    <!-- Analysis modules -->
+    <script src="color-detection.js"></script>
+    <script src="material-detection.js"></script>
+    <script src="edge-detection.js"></script>
+    <script src="depth-estimation.js"></script>
+    
+    <!-- Measurement -->
+    <script src="measurement.js"></script>
+    <script src="auto-measurement.js"></script>
+    
+    <!-- Additional features -->
+    <script src="multi-object-tracker.js"></script>
+    <script src="voice-commands.js"></script>
+    <script src="ar-guides.js"></script>
+    <script src="custom-training.js"></script>
+    <script src="ocr.js"></script>
+    <script src="visual-memory.js"></script>
+    <script src="hyper-learning.js"></script>
+    
+    <!-- Advanced features -->
+    <script src="damage-detection.js"></script>
+    <script src="scan360.js"></script>
+    <script src="scene-reconstruction-3d.js"></script>
+    <script src="barcode-scanner.js"></script>
+    <script src="night-vision.js"></script>
+    <script src="facial-expression.js"></script>
+    <script src="ai-explanation.js"></script>
+    <script src="audio-analysis.js"></script>
+    <script src="weather-detection.js"></script>
+    
+    <!-- UI modules -->
+    <script src="advanced-menu.js"></script>
+    <script src="onboarding.js"></script>
+    <script src="help-system.js"></script>
+    <script src="analytics.js"></script>
+    <script src="dashboard.js"></script>
+
+    <!-- Main app last -->
+    <script src="app.js"></script>
+</body>
+</html>

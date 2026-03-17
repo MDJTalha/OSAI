@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background: #0f3460;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1652a8;
+        }
+        .preview {
+            margin: 20px 0;
+            padding: 20px;
+            background: #16213e;
+            border-radius: 12px;
+        }
+        img {
+            max-width: 200px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📏 MeasureCount Pro - Icon Generator</h1>
+        <p>Click the button below to download PNG icons:</p>
+        
+        <div class="preview">
+            <h3>Preview:</h3>
+            <img id="preview" src="icons/icon-192.svg" alt="Icon Preview">
+        </div>
+        
+        <button onclick="downloadIcon(192)">Download 192x192 PNG</button>
+        <button onclick="downloadIcon(512)">Download 512x512 PNG</button>
+        <button onclick="downloadAll()">Download All Icons</button>
+        
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <script>
+        async function downloadIcon(size) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.crossOrigin = 'anonymous';
+            img.src = `icons/icon-${size}.svg`;
+            
+            await new Promise(resolve => {
+                img.onload = () => {
+                    canvas.width = size;
+                    canvas.height = size;
+                    ctx.drawImage(img, 0, 0, size, size);
+                    resolve();
+                };
+            });
+            
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `icon-${size}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+        
+        async function downloadAll() {
+            await downloadIcon(192);
+            await new Promise(r => setTimeout(r, 500));
+            await downloadIcon(512);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+# Explicitly declare source files
+*.js text diff=csharp
+*.jsx text diff=csharp
+*.ts text diff=csharp
+*.tsx text diff=csharp
+*.json text
+*.css text
+*.scss text
+*.less text
+*.html text
+*.xml text
+*.md text diff=markdown
+*.mdown text diff=markdown
+*.markdown text diff=markdown
+
+# Denote all files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg binary
+*.webp binary
+*.mp4 binary
+*.webm binary
+*.ogg binary
+*.mp3 binary
+*.wav binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.class binary
+*.pyc binary
+
+# Build outputs
+dist/** binary
+build/** binary
+coverage/** binary
+
+# Lock files
+package-lock.json text
+yarn.lock text
+pnpm-lock.yaml text
+
+# Shell scripts
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Web manifests
+*.webmanifest text
+
+# SVG should be treated as text for potential editing
+*.svg text
