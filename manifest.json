@@ -1,7 +1,7 @@
 {
-  "name": "OSAI - Enterprise AI Vision System",
+  "name": "OSAI - Autonomous AI Vision System",
   "short_name": "OSAI",
-  "description": "Autonomous multi-modal AI system with object detection, AR measurement, and continuous learning",
+  "description": "The world's most accessible, privacy-first, autonomous AI vision system - empowering every device with human-level visual understanding",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0A192F",
@@ -10,15 +10,9 @@
   "scope": "/",
   "icons": [
     {
-      "src": "icons/icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icons/icon-512.svg",
+      "src": "OSAI.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
@@ -47,21 +41,21 @@
       "short_name": "Detect",
       "description": "Start object detection",
       "url": "/index.html?action=detect",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "OSAI.png", "sizes": "192x192" }]
     },
     {
       "name": "Measure",
       "short_name": "Measure",
       "description": "Start AR measurement",
       "url": "/index.html?action=measure",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "OSAI.png", "sizes": "192x192" }]
     },
     {
       "name": "Scan Barcode",
       "short_name": "Scan",
       "description": "Start barcode scanner",
       "url": "/index.html?action=scan",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "OSAI.png", "sizes": "192x192" }]
     }
   ],
   "related_applications": [],
