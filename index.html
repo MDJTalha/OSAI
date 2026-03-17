@@ -3,312 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0A192F">
-    <title>OSAI - AI Vision System</title>
-    
-    <!-- AI Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
-    <script src="https://docs.opencv.org/4.x/opencv.js" onload="cvReady=true"></script>
-    
+    <title>OSAI - TEST VERSION</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #0A192F; color: #F9FAFB; overflow: hidden; }
-        
-        /* Stats Bar */
-        .stats-bar {
-            position: fixed; top: 0; left: 0; right: 0;
-            background: rgba(17, 34, 64, 0.95);
-            padding: 12px 20px; display: flex; gap: 20px;
-            z-index: 1000; backdrop-filter: blur(10px);
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #000; 
+            color: #fff;
+            overflow: hidden;
         }
-        .stat { font-size: 14px; }
-        .stat strong { color: #3B82F6; }
-        
-        /* Camera Container */
-        .camera-container {
-            position: fixed; top: 60px; left: 0; right: 0; bottom: 100px;
-            background: #000; display: flex; align-items: center; justify-content: center;
+        #debug {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 99999;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 90vh;
+            overflow-y: auto;
         }
-        video, canvas {
-            max-width: 100%; max-height: 100%;
-            object-fit: contain;
-        }
-        
-        /* Camera Start Button */
-        #startCameraBtn {
-            position: fixed; top: 50%; left: 50%;
+        #debug h2 { margin-bottom: 10px; color: #3B82F6; }
+        .log { margin: 5px 0; }
+        .error { color: #EF4444; }
+        .success { color: #10B981; }
+        .warning { color: #F59E0B; }
+        #cameraBtn {
+            position: fixed;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
             background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-            color: white; padding: 20px 40px; border: none;
-            border-radius: 12px; font-size: 18px; font-weight: 600;
-            cursor: pointer; z-index: 9999;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+            color: white;
+            padding: 30px 60px;
+            border: none;
+            border-radius: 16px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.5);
         }
-        #startCameraBtn:hover { transform: translate(-50%, -50%) scale(1.05); }
-        
-        /* Quick Actions */
-        .quick-actions {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(17, 34, 64, 0.95);
-            padding: 12px; display: flex; gap: 8px;
-            justify-content: center; flex-wrap: wrap;
-            z-index: 1000; backdrop-filter: blur(10px);
+        #cameraBtn:hover { transform: translate(-50%, -50%) scale(1.05); }
+        #videoContainer {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #000;
         }
-        .action-btn {
-            background: #1F2937; color: #F9FAFB;
-            border: 1px solid #374151; padding: 12px 20px;
-            border-radius: 8px; cursor: pointer;
-            font-size: 14px; font-weight: 500;
-            transition: all 0.2s;
-        }
-        .action-btn:hover { background: #3B82F6; border-color: #3B82F6; }
-        
-        /* Loading Overlay */
-        .loading-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8); display: none;
-            align-items: center; justify-content: center; z-index: 99999;
-        }
-        .loading-overlay.active { display: flex; }
-        .spinner {
-            width: 50px; height: 50px;
-            border: 4px solid #3B82F6;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* Toast */
-        .toast {
-            position: fixed; bottom: 100px; left: 50%;
-            transform: translateX(-50%);
-            background: #3B82F6; color: white;
-            padding: 12px 24px; border-radius: 8px;
-            z-index: 10000; font-size: 14px;
+        video, canvas {
+            max-width: 100%;
+            max-height: 100%;
         }
     </style>
 </head>
 <body>
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-        <div class="stat">Models: <strong id="aiModels">Loading...</strong></div>
-        <div class="stat">Items: <strong id="itemCount">0</strong></div>
-        <div class="stat">FPS: <strong id="fpsValue">0</strong></div>
+    <div id="debug">
+        <h2>🔍 OSAI Diagnostic</h2>
+        <div id="logs"></div>
     </div>
     
-    <!-- Camera Container -->
-    <div class="camera-container">
-        <video id="cameraFeed" autoplay playsinline muted></video>
-        <canvas id="cameraCanvas"></canvas>
-        <button id="startCameraBtn">📷 Start Camera</button>
-    </div>
+    <button id="cameraBtn">📷 START CAMERA TEST</button>
     
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <button class="action-btn" onclick="detectObjects()">🔍 Detect</button>
-        <button class="action-btn" onclick="captureFrame()">📷 Capture</button>
-        <button class="action-btn" onclick="analyzeScene()">📊 Analyze</button>
-        <button class="action-btn" onclick="startScan()">📱 Scan</button>
-        <button class="action-btn" onclick="startOCR()">📝 Text</button>
-    </div>
-    
-    <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
+    <div id="videoContainer">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
     </div>
 
     <script>
-        // Global state
-        let cameraActive = false;
-        let modelsLoaded = 0;
-        let cocoSsdModel = null;
-        let cvReady = false;
+        const logs = document.getElementById('logs');
+        let logCount = 0;
         
-        // Initialize
-        console.log('[OSAI] Initializing...');
-        initModels();
-        setupCameraButton();
-        
-        // Load AI models
-        async function initModels() {
-            try {
-                // Load COCO-SSD
-                if (typeof cocoSsd !== 'undefined') {
-                    cocoSsdModel = await cocoSsd.load();
-                    modelsLoaded++;
-                    console.log('[OSAI] COCO-SSD loaded');
-                }
-                
-                // Check OpenCV
-                if (cvReady) modelsLoaded++;
-                
-                // Update UI
-                document.getElementById('aiModels').textContent = `${modelsLoaded}/2`;
-                if (modelsLoaded === 2) {
-                    document.getElementById('aiModels').style.color = '#10B981';
-                    showToast('AI Models Loaded!', 'success');
-                }
-            } catch (error) {
-                console.error('[OSAI] Model load error:', error);
-                document.getElementById('aiModels').textContent = 'Error';
-            }
+        function log(msg, type = '') {
+            logCount++;
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${logCount}] ${msg}`;
+            logs.appendChild(div);
+            console.log('[OSAI]', msg);
         }
         
-        // Setup camera button
-        function setupCameraButton() {
-            const btn = document.getElementById('startCameraBtn');
+        log('Page loaded', 'success');
+        log('User Agent: ' + navigator.userAgent);
+        log('HTTPS: ' + (window.location.protocol === 'https:' ? 'Yes' : 'No'), 'warning');
+        log('URL: ' + window.location.href);
+        
+        // Check camera support
+        if (!navigator.mediaDevices) {
+            log('ERROR: mediaDevices not supported', 'error');
+        } else {
+            log('mediaDevices: Available', 'success');
+        }
+        
+        if (!navigator.mediaDevices.getUserMedia) {
+            log('ERROR: getUserMedia not supported', 'error');
+        } else {
+            log('getUserMedia: Available', 'success');
+        }
+        
+        // Check video element
+        const video = document.getElementById('video');
+        if (!video) {
+            log('ERROR: Video element not found', 'error');
+        } else {
+            log('Video element: Found', 'success');
+        }
+        
+        // Setup button
+        const btn = document.getElementById('cameraBtn');
+        log('Start button: ' + (btn ? 'Found' : 'NOT FOUND'), btn ? 'success' : 'error');
+        
+        if (btn) {
             btn.addEventListener('click', async () => {
+                log('Button clicked!', 'success');
+                btn.disabled = true;
+                btn.textContent = 'Starting...';
+                
                 try {
-                    btn.textContent = 'Starting...';
-                    btn.disabled = true;
+                    log('Requesting camera permission...');
                     
                     const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+                        video: { 
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
                     });
                     
-                    const video = document.getElementById('cameraFeed');
+                    log('Camera permission GRANTED!', 'success');
+                    log('Stream tracks: ' + stream.getVideoTracks().length);
+                    
                     video.srcObject = stream;
                     
-                    await new Promise(resolve => {
-                        video.onloadedmetadata = () => {
-                            video.play();
-                            cameraActive = true;
+                    video.onloadedmetadata = () => {
+                        log('Video metadata loaded', 'success');
+                        log('Video size: ' + video.videoWidth + 'x' + video.videoHeight);
+                        
+                        video.play().then(() => {
+                            log('Video playing!', 'success');
+                            document.getElementById('videoContainer').style.display = 'flex';
                             btn.style.display = 'none';
-                            setupCanvas();
-                            showToast('Camera Started!', 'success');
-                            resolve();
-                        };
-                    });
+                            
+                            // Start canvas drawing
+                            const canvas = document.getElementById('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            
+                            function draw() {
+                                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                                    ctx.fillStyle = '#000';
+                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                                    
+                                    // Draw diagnostic info
+                                    ctx.fillStyle = '#0F0';
+                                    ctx.font = '20px Arial';
+                                    ctx.fillText('CAMERA WORKING! ' + new Date().toLocaleTimeString(), 20, 40);
+                                    ctx.fillText('FPS Test: ' + Math.round(1000 / 16) + ' FPS', 20, 70);
+                                }
+                                requestAnimationFrame(draw);
+                            }
+                            draw();
+                            
+                        }).catch(err => {
+                            log('Video play error: ' + err.message, 'error');
+                        });
+                    };
                     
-                    startFPSCounter();
-                } catch (error) {
-                    console.error('[OSAI] Camera error:', error);
-                    showToast('Camera Error: ' + error.message, 'error');
-                    btn.textContent = '📷 Start Camera';
+                    video.onerror = () => {
+                        log('Video error event fired', 'error');
+                    };
+                    
+                } catch (err) {
+                    log('Camera error: ' + err.name + ' - ' + err.message, 'error');
+                    log('Error code: ' + err.code, 'error');
                     btn.disabled = false;
+                    btn.textContent = '📷 START CAMERA TEST';
                 }
+            });
+            
+            btn.addEventListener('error', (err) => {
+                log('Button error: ' + err.message, 'error');
             });
         }
         
-        // Setup canvas
-        function setupCanvas() {
-            const video = document.getElementById('cameraFeed');
-            const canvas = document.getElementById('cameraCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            const updateSize = () => {
-                canvas.width = video.videoWidth || 1280;
-                canvas.height = video.videoHeight || 720;
-            };
-            
-            updateSize();
-            video.addEventListener('resize', updateSize);
-            
-            // Start detection loop
-            detectLoop();
-        }
+        // Periodic status updates
+        setInterval(() => {
+            log('Status check - Button visible: ' + (btn && btn.offsetParent !== null));
+            log('Video readyState: ' + (video ? video.readyState : 'N/A'));
+            log('Video paused: ' + (video ? video.paused : 'N/A'));
+        }, 5000);
         
-        // Detection loop
-        async function detectLoop() {
-            if (!cameraActive || !cocoSsdModel) return;
-            
-            try {
-                const video = document.getElementById('cameraFeed');
-                const canvas = document.getElementById('cameraCanvas');
-                const ctx = canvas.getContext('2d');
-                
-                // Draw video frame
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // Detect objects
-                const predictions = await cocoSsdModel.detect(video);
-                
-                // Draw bounding boxes
-                predictions.forEach(pred => {
-                    const [x, y, w, h] = pred.bbox;
-                    ctx.strokeStyle = '#3B82F6';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(x, y, w, h);
-                    
-                    ctx.fillStyle = '#3B82F6';
-                    ctx.font = '16px Arial';
-                    ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, x, y - 5);
-                });
-                
-                // Update stats
-                document.getElementById('itemCount').textContent = predictions.length;
-                
-            } catch (error) {
-                console.error('[OSAI] Detection error:', error);
-            }
-            
-            requestAnimationFrame(detectLoop);
-        }
-        
-        // FPS Counter
-        function startFPSCounter() {
-            let lastTime = performance.now();
-            let frameCount = 0;
-            
-            const update = () => {
-                const now = performance.now();
-                frameCount++;
-                
-                if (now - lastTime >= 1000) {
-                    document.getElementById('fpsValue').textContent = frameCount;
-                    frameCount = 0;
-                    lastTime = now;
-                }
-                
-                requestAnimationFrame(update);
-            };
-            
-            update();
-        }
-        
-        // Button actions
-        function detectObjects() {
-            showToast('Detecting...', 'info');
-        }
-        
-        function captureFrame() {
-            if (!cameraActive) {
-                showToast('Start camera first!', 'warning');
-                return;
-            }
-            const canvas = document.getElementById('cameraCanvas');
-            const link = document.createElement('a');
-            link.download = `osai-${Date.now()}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-            showToast('Captured!', 'success');
-        }
-        
-        function analyzeScene() {
-            showToast('Analyzing...', 'info');
-        }
-        
-        function startScan() {
-            showToast('Scan mode active', 'info');
-        }
-        
-        function startOCR() {
-            showToast('OCR mode active', 'info');
-        }
-        
-        // Toast notifications
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.textContent = message;
-            toast.style.background = type === 'error' ? '#EF4444' : type === 'success' ? '#10B981' : '#3B82F6';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-        
-        console.log('[OSAI] Initialization complete');
+        log('Initialization complete', 'success');
+        log('Click the START CAMERA button to test', 'warning');
     </script>
 </body>
 </html>

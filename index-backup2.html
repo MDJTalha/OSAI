@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0A192F">
+    <title>OSAI - AI Vision System</title>
+    
+    <!-- AI Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
+    <script src="https://docs.opencv.org/4.x/opencv.js" onload="cvReady=true"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0A192F; color: #F9FAFB; overflow: hidden; }
+        
+        /* Stats Bar */
+        .stats-bar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(17, 34, 64, 0.95);
+            padding: 12px 20px; display: flex; gap: 20px;
+            z-index: 1000; backdrop-filter: blur(10px);
+        }
+        .stat { font-size: 14px; }
+        .stat strong { color: #3B82F6; }
+        
+        /* Camera Container */
+        .camera-container {
+            position: fixed; top: 60px; left: 0; right: 0; bottom: 100px;
+            background: #000; display: flex; align-items: center; justify-content: center;
+        }
+        video, canvas {
+            max-width: 100%; max-height: 100%;
+            object-fit: contain;
+        }
+        
+        /* Camera Start Button */
+        #startCameraBtn {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            color: white; padding: 20px 40px; border: none;
+            border-radius: 12px; font-size: 18px; font-weight: 600;
+            cursor: pointer; z-index: 9999;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+        }
+        #startCameraBtn:hover { transform: translate(-50%, -50%) scale(1.05); }
+        
+        /* Quick Actions */
+        .quick-actions {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(17, 34, 64, 0.95);
+            padding: 12px; display: flex; gap: 8px;
+            justify-content: center; flex-wrap: wrap;
+            z-index: 1000; backdrop-filter: blur(10px);
+        }
+        .action-btn {
+            background: #1F2937; color: #F9FAFB;
+            border: 1px solid #374151; padding: 12px 20px;
+            border-radius: 8px; cursor: pointer;
+            font-size: 14px; font-weight: 500;
+            transition: all 0.2s;
+        }
+        .action-btn:hover { background: #3B82F6; border-color: #3B82F6; }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); display: none;
+            align-items: center; justify-content: center; z-index: 99999;
+        }
+        .loading-overlay.active { display: flex; }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid #3B82F6;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 100px; left: 50%;
+            transform: translateX(-50%);
+            background: #3B82F6; color: white;
+            padding: 12px 24px; border-radius: 8px;
+            z-index: 10000; font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat">Models: <strong id="aiModels">Loading...</strong></div>
+        <div class="stat">Items: <strong id="itemCount">0</strong></div>
+        <div class="stat">FPS: <strong id="fpsValue">0</strong></div>
+    </div>
+    
+    <!-- Camera Container -->
+    <div class="camera-container">
+        <video id="cameraFeed" autoplay playsinline muted></video>
+        <canvas id="cameraCanvas"></canvas>
+        <button id="startCameraBtn">📷 Start Camera</button>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        <button class="action-btn" onclick="detectObjects()">🔍 Detect</button>
+        <button class="action-btn" onclick="captureFrame()">📷 Capture</button>
+        <button class="action-btn" onclick="analyzeScene()">📊 Analyze</button>
+        <button class="action-btn" onclick="startScan()">📱 Scan</button>
+        <button class="action-btn" onclick="startOCR()">📝 Text</button>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        // Global state
+        let cameraActive = false;
+        let modelsLoaded = 0;
+        let cocoSsdModel = null;
+        let cvReady = false;
+        
+        // Initialize
+        console.log('[OSAI] Initializing...');
+        initModels();
+        setupCameraButton();
+        
+        // Load AI models
+        async function initModels() {
+            try {
+                // Load COCO-SSD
+                if (typeof cocoSsd !== 'undefined') {
+                    cocoSsdModel = await cocoSsd.load();
+                    modelsLoaded++;
+                    console.log('[OSAI] COCO-SSD loaded');
+                }
+                
+                // Check OpenCV
+                if (cvReady) modelsLoaded++;
+                
+                // Update UI
+                document.getElementById('aiModels').textContent = `${modelsLoaded}/2`;
+                if (modelsLoaded === 2) {
+                    document.getElementById('aiModels').style.color = '#10B981';
+                    showToast('AI Models Loaded!', 'success');
+                }
+            } catch (error) {
+                console.error('[OSAI] Model load error:', error);
+                document.getElementById('aiModels').textContent = 'Error';
+            }
+        }
+        
+        // Setup camera button
+        function setupCameraButton() {
+            const btn = document.getElementById('startCameraBtn');
+            btn.addEventListener('click', async () => {
+                try {
+                    btn.textContent = 'Starting...';
+                    btn.disabled = true;
+                    
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+                    });
+                    
+                    const video = document.getElementById('cameraFeed');
+                    video.srcObject = stream;
+                    
+                    await new Promise(resolve => {
+                        video.onloadedmetadata = () => {
+                            video.play();
+                            cameraActive = true;
+                            btn.style.display = 'none';
+                            setupCanvas();
+                            showToast('Camera Started!', 'success');
+                            resolve();
+                        };
+                    });
+                    
+                    startFPSCounter();
+                } catch (error) {
+                    console.error('[OSAI] Camera error:', error);
+                    showToast('Camera Error: ' + error.message, 'error');
+                    btn.textContent = '📷 Start Camera';
+                    btn.disabled = false;
+                }
+            });
+        }
+        
+        // Setup canvas
+        function setupCanvas() {
+            const video = document.getElementById('cameraFeed');
+            const canvas = document.getElementById('cameraCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const updateSize = () => {
+                canvas.width = video.videoWidth || 1280;
+                canvas.height = video.videoHeight || 720;
+            };
+            
+            updateSize();
+            video.addEventListener('resize', updateSize);
+            
+            // Start detection loop
+            detectLoop();
+        }
+        
+        // Detection loop
+        async function detectLoop() {
+            if (!cameraActive || !cocoSsdModel) return;
+            
+            try {
+                const video = document.getElementById('cameraFeed');
+                const canvas = document.getElementById('cameraCanvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Draw video frame
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Detect objects
+                const predictions = await cocoSsdModel.detect(video);
+                
+                // Draw bounding boxes
+                predictions.forEach(pred => {
+                    const [x, y, w, h] = pred.bbox;
+                    ctx.strokeStyle = '#3B82F6';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(x, y, w, h);
+                    
+                    ctx.fillStyle = '#3B82F6';
+                    ctx.font = '16px Arial';
+                    ctx.fillText(`${pred.class} (${Math.round(pred.score * 100)}%)`, x, y - 5);
+                });
+                
+                // Update stats
+                document.getElementById('itemCount').textContent = predictions.length;
+                
+            } catch (error) {
+                console.error('[OSAI] Detection error:', error);
+            }
+            
+            requestAnimationFrame(detectLoop);
+        }
+        
+        // FPS Counter
+        function startFPSCounter() {
+            let lastTime = performance.now();
+            let frameCount = 0;
+            
+            const update = () => {
+                const now = performance.now();
+                frameCount++;
+                
+                if (now - lastTime >= 1000) {
+                    document.getElementById('fpsValue').textContent = frameCount;
+                    frameCount = 0;
+                    lastTime = now;
+                }
+                
+                requestAnimationFrame(update);
+            };
+            
+            update();
+        }
+        
+        // Button actions
+        function detectObjects() {
+            showToast('Detecting...', 'info');
+        }
+        
+        function captureFrame() {
+            if (!cameraActive) {
+                showToast('Start camera first!', 'warning');
+                return;
+            }
+            const canvas = document.getElementById('cameraCanvas');
+            const link = document.createElement('a');
+            link.download = `osai-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            showToast('Captured!', 'success');
+        }
+        
+        function analyzeScene() {
+            showToast('Analyzing...', 'info');
+        }
+        
+        function startScan() {
+            showToast('Scan mode active', 'info');
+        }
+        
+        function startOCR() {
+            showToast('OCR mode active', 'info');
+        }
+        
+        // Toast notifications
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            toast.style.background = type === 'error' ? '#EF4444' : type === 'success' ? '#10B981' : '#3B82F6';
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        console.log('[OSAI] Initialization complete');
+    </script>
+</body>
+</html>
