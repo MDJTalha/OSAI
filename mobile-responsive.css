@@ -1,0 +1,239 @@
+/* ========================================
+   MOBILE RESPONSIVENESS FIX
+   Optimized for mobile devices
+   ======================================== */
+
+/* Mobile-first base styles */
+@media (max-width: 768px) {
+    /* Fix viewport */
+    html {
+        font-size: 16px; /* Base size for mobile */
+    }
+    
+    body {
+        overflow-x: hidden; /* Prevent horizontal scroll */
+        -webkit-text-size-adjust: 100%; /* Prevent zoom on iOS */
+    }
+    
+    /* Stats Bar - Stack on mobile */
+    .stats-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .stat {
+        font-size: 12px;
+        min-width: calc(33% - 8px); /* 3 per row */
+    }
+    
+    /* Action Buttons - Stack vertically */
+    .quick-actions {
+        flex-direction: column;
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .action-btn {
+        width: 100%;
+        min-height: 56px; /* Touch target */
+        font-size: 16px;
+        padding: 16px;
+    }
+    
+    /* Camera button - Larger on mobile */
+    #startCameraBtn, #cameraBtn {
+        padding: 40px 80px;
+        font-size: 28px;
+        max-width: 90vw;
+    }
+    
+    /* Video - Full viewport */
+    #video, video, #cameraFeed {
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+    }
+    
+    /* Debug Log - Smaller, scrollable */
+    #debug {
+        max-width: 90vw;
+        max-height: 30vh;
+        font-size: 11px;
+        padding: 10px;
+    }
+    
+    /* Modals/Panels - Full screen on mobile */
+    .modal, .panel, .bottom-panel {
+        width: 95vw;
+        max-height: 90vh;
+        margin: 0 auto;
+    }
+    
+    /* Calibration - Stack vertically */
+    .calibration-controls {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .calibration-controls select,
+    .calibration-controls input {
+        width: 100%;
+        min-height: 48px;
+        font-size: 16px; /* Prevents iOS zoom */
+    }
+    
+    /* Close buttons - Larger */
+    .panel-close, .close-btn, #dismissInstallBtn {
+        min-width: 48px;
+        min-height: 48px;
+        font-size: 24px;
+        padding: 12px;
+    }
+    
+    /* Loading overlay - Center properly */
+    .loading-overlay {
+        padding: 20px;
+    }
+    
+    /* Toast - Fit mobile screen */
+    .toast {
+        left: 50%;
+        width: 90%;
+        max-width: none;
+        font-size: 14px;
+    }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .stats-bar {
+        gap: 15px;
+    }
+    
+    .stat {
+        font-size: 13px;
+    }
+    
+    .action-btn {
+        min-height: 48px;
+        font-size: 14px;
+    }
+}
+
+/* Touch optimization for all devices */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    button, .action-btn, .control-fab {
+        min-height: 48px;
+        min-width: 48px;
+        padding: 12px 16px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    button:hover, .action-btn:hover {
+        transform: none;
+    }
+    
+    /* Active state feedback */
+    button:active, .action-btn:active {
+        transform: scale(0.95);
+        opacity: 0.8;
+    }
+    
+    /* Prevent text selection on touch */
+    .no-select {
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .stats-bar {
+        position: relative;
+        max-height: 40px;
+    }
+    
+    .quick-actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    
+    .action-btn {
+        min-width: calc(20% - 8px);
+    }
+    
+    #debug {
+        max-height: 20vh;
+    }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+    /* Fix iOS Safari address bar overlap */
+    body {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    /* Prevent iOS zoom on input focus */
+    input, select, textarea {
+        font-size: 16px !important;
+    }
+    
+    /* Fix iOS button styling */
+    button {
+        -webkit-appearance: none;
+        border-radius: 8px;
+    }
+}
+
+/* Android Chrome specific */
+@supports (-webkit-appearance: none) and (not (overflow: -webkit-marquee)) {
+    /* Fix Android Chrome address bar */
+    html {
+        height: -webkit-fill-available;
+    }
+    
+    body {
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
+    }
+}
+
+/* High DPI / Retina displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Sharper text on high DPI screens */
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Crisper borders */
+    button, .action-btn {
+        border-width: 0.5px;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #0A192F;
+        color: #F9FAFB;
+    }
+    
+    #debug {
+        background: rgba(0, 0, 0, 0.9);
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
