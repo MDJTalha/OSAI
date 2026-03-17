@@ -1,206 +1,76 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSAI - TEST VERSION</title>
+    <title>OSAI Camera Test</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: Arial, sans-serif; 
-            background: #000; 
-            color: #fff;
-            overflow: hidden;
-        }
-        #debug {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 8px;
-            z-index: 99999;
-            font-size: 14px;
-            line-height: 1.6;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        #debug h2 { margin-bottom: 10px; color: #3B82F6; }
-        .log { margin: 5px 0; }
+        body { font-family: Arial, sans-serif; background: #1a1a1a; color: white; }
+        #video { width: 100vw; height: 100vh; object-fit: cover; background: #000; }
+        #btn { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px 60px; font-size: 24px; background: #3B82F6; color: white; border: none; border-radius: 12px; cursor: pointer; z-index: 9999; }
+        #debug { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; z-index: 9999; font-size: 13px; max-height: 50vh; overflow-y: auto; }
+        .log { margin: 3px 0; }
         .error { color: #EF4444; }
         .success { color: #10B981; }
-        .warning { color: #F59E0B; }
-        #cameraBtn {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-            color: white;
-            padding: 30px 60px;
-            border: none;
-            border-radius: 16px;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 9999;
-            box-shadow: 0 10px 40px rgba(59, 130, 246, 0.5);
-        }
-        #cameraBtn:hover { transform: translate(-50%, -50%) scale(1.05); }
-        #videoContainer {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-        }
-        video, canvas {
-            max-width: 100%;
-            max-height: 100%;
-        }
     </style>
-<script src="video-fix.js"></script></head>
+</head>
 <body>
-    <div id="debug">
-        <h2>🔍 OSAI Diagnostic</h2>
-        <div id="logs"></div>
-    </div>
+    <div id="debug"><h3>🔍 DEBUG LOG</h3><div id="logs"></div></div>
+    <button id="btn">📷 START CAMERA</button>
+    <video id="video" autoplay playsinline muted></video>
     
-    <button id="cameraBtn">📷 START CAMERA TEST</button>
-    
-    <div id="videoContainer">
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="canvas"></canvas>
-    </div>
-
     <script>
-        const logs = document.getElementById('logs');
-        let logCount = 0;
-        
-        function log(msg, type = '') {
-            logCount++;
+        const log = (m, t='') => {
+            const d = document.getElementById('logs');
             const div = document.createElement('div');
-            div.className = `log ${type}`;
-            div.textContent = `[${logCount}] ${msg}`;
-            logs.appendChild(div);
-            console.log('[OSAI]', msg);
-        }
+            div.className = 'log ' + t;
+            div.textContent = '• ' + m;
+            d.appendChild(div);
+            console.log(m);
+        };
         
         log('Page loaded', 'success');
-        log('User Agent: ' + navigator.userAgent);
-        log('HTTPS: ' + (window.location.protocol === 'https:' ? 'Yes' : 'No'), 'warning');
-        log('URL: ' + window.location.href);
+        log('HTTPS: ' + (location.protocol === 'https:' ? 'YES' : 'NO'), location.protocol === 'https:' ? 'success' : 'error');
         
-        // Check camera support
-        if (!navigator.mediaDevices) {
-            log('ERROR: mediaDevices not supported', 'error');
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            log('ERROR: Camera API not supported', 'error');
+            document.getElementById('btn').disabled = true;
         } else {
-            log('mediaDevices: Available', 'success');
-        }
-        
-        if (!navigator.mediaDevices.getUserMedia) {
-            log('ERROR: getUserMedia not supported', 'error');
-        } else {
-            log('getUserMedia: Available', 'success');
-        }
-        
-        // Check video element
-        const video = document.getElementById('video');
-        if (!video) {
-            log('ERROR: Video element not found', 'error');
-        } else {
-            log('Video element: Found', 'success');
-        }
-        
-        // Setup button
-        const btn = document.getElementById('cameraBtn');
-        log('Start button: ' + (btn ? 'Found' : 'NOT FOUND'), btn ? 'success' : 'error');
-        
-        if (btn) {
-            btn.addEventListener('click', async () => {
-                log('Button clicked!', 'success');
-                btn.disabled = true;
-                btn.textContent = 'Starting...';
+            log('Camera API: Available', 'success');
+            
+            document.getElementById('btn').onclick = async () => {
+                const btn = document.getElementById('btn');
+                const video = document.getElementById('video');
                 
                 try {
-                    log('Requesting camera permission...');
+                    log('Requesting camera...');
+                    btn.textContent = 'Starting...';
+                    btn.disabled = true;
                     
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { 
-                            facingMode: 'environment',
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    });
-                    
-                    log('Camera permission GRANTED!', 'success');
-                    log('Stream tracks: ' + stream.getVideoTracks().length);
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    log('Permission GRANTED!', 'success');
                     
                     video.srcObject = stream;
+                    log('Video stream attached', 'success');
                     
                     video.onloadedmetadata = () => {
-                        log('Video metadata loaded', 'success');
-                        log('Video size: ' + video.videoWidth + 'x' + video.videoHeight);
-                        
-                        video.play().then(() => {
-                            log('Video playing!', 'success');
-                            document.getElementById('videoContainer').style.display = 'flex';
-                            btn.style.display = 'none';
-                            
-                            // Start canvas drawing
-                            const canvas = document.getElementById('canvas');
-                            const ctx = canvas.getContext('2d');
-                            canvas.width = video.videoWidth;
-                            canvas.height = video.videoHeight;
-                            
-                            function draw() {
-                                if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                                    ctx.fillStyle = '#000';
-                                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                                    
-                                    // Draw diagnostic info
-                                    ctx.fillStyle = '#0F0';
-                                    ctx.font = '20px Arial';
-                                    ctx.fillText('CAMERA WORKING! ' + new Date().toLocaleTimeString(), 20, 40);
-                                    ctx.fillText('FPS Test: ' + Math.round(1000 / 16) + ' FPS', 20, 70);
-                                }
-                                requestAnimationFrame(draw);
-                            }
-                            draw();
-                            
-                        }).catch(err => {
-                            log('Video play error: ' + err.message, 'error');
-                        });
-                    };
-                    
-                    video.onerror = () => {
-                        log('Video error event fired', 'error');
+                        log('Video loaded: ' + video.videoWidth + 'x' + video.videoHeight, 'success');
+                        video.play();
+                        log('Video PLAYING!', 'success');
+                        btn.style.display = 'none';
+                        log('✅ CAMERA WORKING!', 'success');
                     };
                     
                 } catch (err) {
-                    log('Camera error: ' + err.name + ' - ' + err.message, 'error');
-                    log('Error code: ' + err.code, 'error');
+                    log('ERROR: ' + err.name + ' - ' + err.message, 'error');
+                    btn.textContent = '📷 START CAMERA';
                     btn.disabled = false;
-                    btn.textContent = '📷 START CAMERA TEST';
                 }
-            });
+            };
             
-            btn.addEventListener('error', (err) => {
-                log('Button error: ' + err.message, 'error');
-            });
+            log('Click START CAMERA button', 'success');
         }
-        
-        // Periodic status updates
-        setInterval(() => {
-            log('Status check - Button visible: ' + (btn && btn.offsetParent !== null));
-            log('Video readyState: ' + (video ? video.readyState : 'N/A'));
-            log('Video paused: ' + (video ? video.paused : 'N/A'));
-        }, 5000);
-        
-        log('Initialization complete', 'success');
-        log('Click the START CAMERA button to test', 'warning');
     </script>
 </body>
 </html>
